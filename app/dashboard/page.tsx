@@ -1,52 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
+
+const mockRequests = [
+  { id: 1, transporter: "Mamadou Ndiaye", status: "envoyée", type: "Local", date: "2026-11-14" },
+  { id: 2, transporter: "GP Aminata", status: "acceptée", type: "GP", date: "2026-11-10" },
+];
+
+const mockAnnonces = [
+  { id: 1, type: "Tiak-Tiak", zone: "Dakar Plateau", price: "1 500 FCFA" },
+];
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null);
-  const supabase = createClient();
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-  }, []);
-
-  if (!user) {
-    return (
-      <div className="text-center py-12">
-        <h1 className="text-2xl font-bold mb-4">Tableau de bord</h1>
-        <p>Connectez-vous pour voir vos demandes et annonces.</p>
-        <a href="/login" className="inline-block mt-4 bg-[#176c64] text-white px-6 py-3 rounded-xl font-semibold">Se connecter</a>
-      </div>
-    );
-  }
-
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Tableau de bord</h1>
-      <p className="mb-4">Bienvenue, {user.email}</p>
+      <h1 className="text-2xl font-bold mb-6">Tableau de bord (démo)</h1>
+      <p className="mb-6 text-[#698084]">Version mock — connexion Supabase demain.</p>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
-          <h2 className="font-bold mb-2">Mes demandes</h2>
-          <p className="text-sm text-[#698084]">Aucune demande pour le moment (données réelles à venir).</p>
+          <h2 className="font-bold mb-4">Mes demandes</h2>
+          {mockRequests.map(r => (
+            <div key={r.id} className="border-b py-3 last:border-0">
+              <div className="font-semibold">{r.transporter}</div>
+              <div className="text-sm text-[#698084]">{r.type} · {r.date} · <span className="capitalize">{r.status}</span></div>
+            </div>
+          ))}
         </div>
+
         <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
-          <h2 className="font-bold mb-2">Mes annonces</h2>
-          <p className="text-sm text-[#698084]">Publiez une disponibilité ou un trajet GP.</p>
-          <a href="/publish" className="inline-block mt-3 text-[#176c64] font-semibold">Publier →</a>
+          <h2 className="font-bold mb-4">Mes annonces</h2>
+          {mockAnnonces.map(a => (
+            <div key={a.id} className="border-b py-3 last:border-0">
+              <div className="font-semibold">{a.type} — {a.zone}</div>
+              <div className="text-sm text-[#155e58] font-bold">{a.price}</div>
+            </div>
+          ))}
+          <Link href="/publish" className="inline-block mt-4 text-[#176c64] font-semibold">+ Publier une annonce</Link>
         </div>
       </div>
 
-      <button
-        onClick={async () => {
-          await supabase.auth.signOut();
-          window.location.href = "/";
-        }}
-        className="mt-8 text-sm text-red-600 underline"
-      >
-        Se déconnecter
-      </button>
+      <div className="text-center">
+        <Link href="/login" className="text-sm text-[#698084] underline">Connexion (Supabase demain)</Link>
+      </div>
     </div>
   );
 }
