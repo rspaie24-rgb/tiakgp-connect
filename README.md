@@ -1,28 +1,38 @@
 # TiakGP Connect
 
-Prototype interactif et cahier des charges pour **TiakGP Connect**, une marketplace de mise en relation pour le transport de colis :
+Marketplace web mobile-first de mise en relation pour le transport de colis au Sénégal (Tiak-Tiak) et à l'international (GP).
 
-- **Livraison locale** au Sénégal (Tiak-Tiak)
-- **Transport international** (GP) entre le Sénégal, la France et autres destinations
+## Stack
 
-## Contenu du dépôt
+- Next.js 15 (App Router) + TypeScript + Tailwind CSS
+- Supabase (Auth, Postgres, Storage, Realtime) + PostGIS (prévu)
+- Données mockées pour le démarrage
 
-- `prototype.html` — Prototype interactif (HTML/CSS/JS vanilla) fonctionnant hors ligne dans un navigateur. Données fictives.
-- `cahier_des_charges.md` — Cahier des charges fonctionnel du MVP.
-- `prompt_codex.md` — Prompt prêt à l'emploi pour démarrer le développement avec Codex (ou un autre agent).
+## Démarrage
 
-## Démarrage rapide
+```bash
+npm install
+npm run dev
+```
 
-Ouvrez simplement `prototype.html` dans un navigateur. Aucune installation requise.
+Ouvre [http://localhost:3000](http://localhost:3000).
 
-## Stack prévue (à développer)
+## Structure actuelle
 
-Next.js (App Router) + TypeScript + Tailwind + Supabase (Auth, Postgres, Storage, Realtime) + PostGIS.
+- `app/page.tsx` — Accueil
+- `app/local/page.tsx` — Recherche Tiak-Tiak (mock)
+- `app/gp/page.tsx` — Recherche GP (mock)
+- `lib/mock-data.ts` — Données de démonstration
+- Fichiers de prototype et cahier des charges conservés
 
-## Note
+## Prochaines étapes
 
-Ceci est un prototype de démonstration. Aucun paiement réel, aucune donnée personnelle, aucune réservation effective.
+1. Authentification Supabase + rôles
+2. Schéma SQL + RLS + migrations
+3. Publication de disponibilités / trajets
+4. Demandes de transport + statuts
+5. Tableaux de bord et avis
 
----
+Voir `cahier_des_charges.md` et `prompt_codex.md` pour le détail.
 
-Créé à partir du kit prototype fourni.
+> Aucun paiement réel. Données fictives. Prototype en cours de construction.
