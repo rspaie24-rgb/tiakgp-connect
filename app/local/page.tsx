@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import { localTransporters, type LocalTransporter } from "@/lib/mock-data";
-import { RequestDialog } from "@/components/RequestDialog";
+import { TransporterCard } from "@/components/TransporterCard";
 
 export default function LocalPage() {
   const [city, setCity] = useState("");
   const [district, setDistrict] = useState("");
   const [availability, setAvailability] = useState("yes");
   const [results, setResults] = useState<LocalTransporter[]>(localTransporters.filter(t => t.available));
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedName, setSelectedName] = useState("");
 
   function search() {
     const filtered = localTransporters.filter(t => {
@@ -20,11 +18,6 @@ export default function LocalPage() {
       return cityOk && districtOk && availOk;
     });
     setResults(filtered);
-  }
-
-  function openRequest(name: string) {
-    setSelectedName(name);
-    setDialogOpen(true);
   }
 
   return (
@@ -66,39 +59,25 @@ export default function LocalPage() {
           <div className="col-span-full text-center bg-white p-8 rounded-2xl">Aucun transporteur ne correspond aux filtres.</div>
         ) : (
           results.map(t => (
-            <article key={t.id} className="bg-white border border-[#e0e9e7] rounded-2xl p-5 flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-[#d9eeea] text-[#12554e] rounded-xl grid place-items-center text-2xl">🛵</div>
-                <div>
-                  <h3 className="font-bold">{t.name}</h3>
-                  <div className="text-sm text-[#698084]">⭐ {t.rating} · {t.reviews} avis</div>
-                </div>
-              </div>
-              <span className={`inline-block text-xs font-bold px-2 py-1 rounded-full ${t.available ? "bg-[#e3f6e8] text-[#23754a]" : "bg-gray-100 text-gray-500"}`}>
-                ● {t.available ? "Disponible" : "Indisponible"}
-              </span>
-              <div className="text-sm text-[#425d61] leading-relaxed">
-                📍 {t.zone} — {t.district}<br />
-                🗺️ {t.coverage}
-              </div>
-              <div className="text-lg font-extrabold text-[#155e58]">{t.price}</div>
-              <button
-                disabled={!t.available}
-                onClick={() => openRequest(t.name)}
-                className="mt-auto bg-[#176c64] text-white rounded-lg py-2.5 font-semibold disabled:opacity-50"
-              >
-                Demander un transport
-              </button>
-            </article>
+            <TransporterCard
+              key={t.id}
+              id={t.id}
+              name={t.name}
+              rating={t.rating}
+              reviews={t.reviews}
+              available={t.available}
+              price={t.price}
+              icon="🛵"
+              details={
+                <>
+                  📍 {t.zone} — {t.district}<br />
+                  🗺️ {t.coverage}
+                </>
+              }
+            />
           ))
         )}
       </div>
-
-      <RequestDialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        transporterName={selectedName}
-      />
     </div>
   );
 }
