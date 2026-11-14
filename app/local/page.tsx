@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { localTransporters, type LocalTransporter } from "@/lib/mock-data";
+import { RequestDialog } from "@/components/RequestDialog";
 
 export default function LocalPage() {
   const [city, setCity] = useState("");
   const [district, setDistrict] = useState("");
   const [availability, setAvailability] = useState("yes");
   const [results, setResults] = useState<LocalTransporter[]>(localTransporters.filter(t => t.available));
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedName, setSelectedName] = useState("");
 
   function search() {
     const filtered = localTransporters.filter(t => {
@@ -17,6 +20,11 @@ export default function LocalPage() {
       return cityOk && districtOk && availOk;
     });
     setResults(filtered);
+  }
+
+  function openRequest(name: string) {
+    setSelectedName(name);
+    setDialogOpen(true);
   }
 
   return (
@@ -74,13 +82,23 @@ export default function LocalPage() {
                 🗺️ {t.coverage}
               </div>
               <div className="text-lg font-extrabold text-[#155e58]">{t.price}</div>
-              <button disabled={!t.available} className="mt-auto bg-[#176c64] text-white rounded-lg py-2.5 font-semibold disabled:opacity-50">
+              <button
+                disabled={!t.available}
+                onClick={() => openRequest(t.name)}
+                className="mt-auto bg-[#176c64] text-white rounded-lg py-2.5 font-semibold disabled:opacity-50"
+              >
                 Demander un transport
               </button>
             </article>
           ))
         )}
       </div>
+
+      <RequestDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        transporterName={selectedName}
+      />
     </div>
   );
 }
