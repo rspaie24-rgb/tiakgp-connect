@@ -1,25 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const supabase = createClient();
 
-  async function handleLogin(e: React.FormEvent) {
+  function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setMessage("Connexion en cours…");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setMessage(error ? error.message : "Connecté ! (redirection à venir)");
+    setMessage("Connexion simulée (Supabase demain). E-mail : " + email);
   }
 
-  async function handleSignup() {
-    setMessage("Inscription en cours…");
-    const { error } = await supabase.auth.signUp({ email, password });
-    setMessage(error ? error.message : "Compte créé. Vérifiez votre e-mail.");
+  function handleSignup() {
+    setMessage("Inscription simulée (Supabase demain).");
   }
 
   return (
@@ -46,12 +40,12 @@ export default function LoginPage() {
           Se connecter
         </button>
       </form>
-      <button onClick={handleSignup} className="w-full mt-3 bg-[#efbb45] text-[#243234] font-bold rounded-xl py-3">
+      <button type="button" onClick={handleSignup} className="w-full mt-3 bg-[#efbb45] text-[#243234] font-bold rounded-xl py-3">
         Créer un compte
       </button>
       {message && <p className="mt-4 text-sm text-center">{message}</p>}
       <p className="mt-6 text-xs text-[#698084] text-center">
-        Auth Supabase. Configurez les variables d'environnement.
+        Version mock — authentification Supabase demain.
       </p>
     </div>
   );
