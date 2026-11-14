@@ -18,6 +18,11 @@ export default function TransporterProfile() {
 
   const isLocal = !!local;
 
+  // Mock WhatsApp (consentement à implémenter avec Supabase)
+  const whatsappLink = `https://wa.me/221771234567?text=${encodeURIComponent(
+    `Bonjour ${t.name}, je vous contacte via TiakGP Connect concernant une demande de transport.`
+  )}`;
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6 mb-6">
@@ -52,14 +57,30 @@ export default function TransporterProfile() {
           )}
         </div>
 
-        <div className="text-2xl font-extrabold text-[#155e58] mb-6">{t.price}</div>
+        <div className="text-2xl font-extrabold text-[#155e58] mb-2">{t.price}</div>
+        <p className="text-xs text-[#698084] mb-6">
+          Prix indicatif. Modalités de paiement à convenir directement avec le transporteur (hors plateforme).
+        </p>
 
-        <button
-          onClick={() => setDialogOpen(true)}
-          className="w-full bg-[#176c64] text-white rounded-xl py-3 font-semibold"
-        >
-          Demander un transport
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => setDialogOpen(true)}
+            className="flex-1 bg-[#176c64] text-white rounded-xl py-3 font-semibold"
+          >
+            Demander un transport
+          </button>
+          <a
+            href={whatsappLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 bg-[#25D366] text-white rounded-xl py-3 font-semibold text-center"
+          >
+            Contacter sur WhatsApp
+          </a>
+        </div>
+        <p className="text-xs text-[#698084] mt-3 text-center">
+          Le bouton WhatsApp apparaît uniquement si le transporteur a donné son consentement (démo).
+        </p>
       </div>
 
       <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
