@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { gpTrips, type GpTrip } from "@/lib/mock-data";
+import { RequestDialog } from "@/components/RequestDialog";
 
 function formatDate(d: string) {
   return new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
@@ -12,6 +13,8 @@ export default function GpPage() {
   const [to, setTo] = useState("");
   const [date, setDate] = useState("");
   const [results, setResults] = useState<GpTrip[]>(gpTrips);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedName, setSelectedName] = useState("");
 
   function search() {
     const filtered = gpTrips.filter(t => {
@@ -21,6 +24,11 @@ export default function GpPage() {
       return fromOk && toOk && dateOk;
     });
     setResults(filtered);
+  }
+
+  function openRequest(name: string) {
+    setSelectedName(name);
+    setDialogOpen(true);
   }
 
   return (
@@ -81,11 +89,22 @@ export default function GpPage() {
                 📦 Capacité : {t.capacity}
               </div>
               <div className="text-lg font-extrabold text-[#155e58]">{t.price}</div>
-              <button className="mt-auto bg-[#176c64] text-white rounded-lg py-2.5 font-semibold">Demander un transport</button>
+              <button
+                onClick={() => openRequest(t.name)}
+                className="mt-auto bg-[#176c64] text-white rounded-lg py-2.5 font-semibold"
+              >
+                Demander un transport
+              </button>
             </article>
           ))
         )}
       </div>
+
+      <RequestDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        transporterName={selectedName}
+      />
     </div>
   );
 }
