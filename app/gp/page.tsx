@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { gpTrips, type GpTrip } from "@/lib/mock-data";
-import { RequestDialog } from "@/components/RequestDialog";
+import { TransporterCard } from "@/components/TransporterCard";
 
 function formatDate(d: string) {
   return new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
@@ -13,8 +13,6 @@ export default function GpPage() {
   const [to, setTo] = useState("");
   const [date, setDate] = useState("");
   const [results, setResults] = useState<GpTrip[]>(gpTrips);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedName, setSelectedName] = useState("");
 
   function search() {
     const filtered = gpTrips.filter(t => {
@@ -24,11 +22,6 @@ export default function GpPage() {
       return fromOk && toOk && dateOk;
     });
     setResults(filtered);
-  }
-
-  function openRequest(name: string) {
-    setSelectedName(name);
-    setDialogOpen(true);
   }
 
   return (
@@ -72,39 +65,28 @@ export default function GpPage() {
           <div className="col-span-full text-center bg-white p-8 rounded-2xl">Aucun trajet ne correspond aux filtres.</div>
         ) : (
           results.map(t => (
-            <article key={t.id} className="bg-white border border-[#e0e9e7] rounded-2xl p-5 flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-[#d9eeea] text-[#12554e] rounded-xl grid place-items-center text-2xl">✈️</div>
-                <div>
-                  <h3 className="font-bold">{t.name}</h3>
-                  <div className="text-sm text-[#698084]">⭐ {t.rating} · {t.reviews} avis</div>
-                </div>
-              </div>
-              <span className="inline-block text-xs font-bold px-2 py-1 rounded-full bg-[#e3f6e8] text-[#23754a]">● Disponible</span>
-              <div className="text-sm text-[#425d61] leading-relaxed">
-                🌍 {t.from} → {t.to}<br />
-                🛫 Départ : {formatDate(t.depart)}<br />
-                🛬 Arrivée : {formatDate(t.arrive)}<br />
-                🔁 Retour : {t.returnDate === "À préciser" ? t.returnDate : formatDate(t.returnDate)}<br />
-                📦 Capacité : {t.capacity}
-              </div>
-              <div className="text-lg font-extrabold text-[#155e58]">{t.price}</div>
-              <button
-                onClick={() => openRequest(t.name)}
-                className="mt-auto bg-[#176c64] text-white rounded-lg py-2.5 font-semibold"
-              >
-                Demander un transport
-              </button>
-            </article>
+            <TransporterCard
+              key={t.id}
+              id={t.id}
+              name={t.name}
+              rating={t.rating}
+              reviews={t.reviews}
+              available={t.available}
+              price={t.price}
+              icon="✈️"
+              details={
+                <>
+                  🌍 {t.from} → {t.to}<br />
+                  🛫 Départ : {formatDate(t.depart)}<br />
+                  🛬 Arrivée : {formatDate(t.arrive)}<br />
+                  🔁 Retour : {t.returnDate === "À préciser" ? t.returnDate : formatDate(t.returnDate)}<br />
+                  📦 Capacité : {t.capacity}
+                </>
+              }
+            />
           ))
         )}
       </div>
-
-      <RequestDialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        transporterName={selectedName}
-      />
     </div>
   );
 }
