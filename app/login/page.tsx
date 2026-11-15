@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [accept, setAccept] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const configured = isSupabaseConfigured();
@@ -91,6 +93,10 @@ export default function LoginPage() {
       setMessage("Mot de passe : minimum 6 caractères.");
       return;
     }
+    if (!accept) {
+      setMessage("Tu dois accepter les CGU et la politique de confidentialité.");
+      return;
+    }
     setLoading(true);
     setMessage("");
     try {
@@ -138,12 +144,12 @@ export default function LoginPage() {
     <div className="max-w-md mx-auto bg-white border border-[#e1e9e8] rounded-2xl p-8">
       <h1 className="text-2xl font-bold mb-2">Connexion / Inscription</h1>
       <p className="text-sm text-[#698084] mb-6">
-        Avec ton <strong>numéro de téléphone</strong> — pas besoin d&apos;e-mail.
+        Avec ton <strong>numéro de téléphone</strong> — pas besoin d'e-mail.
       </p>
 
       {!configured && (
         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
-          Supabase n&apos;est pas encore configuré sur ce déploiement.
+          Supabase n'est pas encore configuré sur ce déploiement.
         </div>
       )}
 
@@ -184,6 +190,27 @@ export default function LoginPage() {
             autoComplete="current-password"
           />
         </div>
+
+        <label className="flex items-start gap-2 text-xs text-[#425d61]">
+          <input
+            type="checkbox"
+            checked={accept}
+            onChange={e => setAccept(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            J’accepte les{" "}
+            <Link href="/cgu" className="underline text-[#176c64]" target="_blank">
+              CGU
+            </Link>{" "}
+            et la{" "}
+            <Link href="/confidentialite" className="underline text-[#176c64]" target="_blank">
+              politique de confidentialité
+            </Link>
+            .
+          </span>
+        </label>
+
         <button
           type="submit"
           disabled={loading}
@@ -195,7 +222,7 @@ export default function LoginPage() {
       <button
         type="button"
         onClick={handleSignup}
-        disabled={loading}
+        disabled={loading || !accept}
         className="w-full mt-3 bg-[#efbb45] text-[#243234] font-bold rounded-xl py-3 disabled:opacity-60"
       >
         Créer un compte
