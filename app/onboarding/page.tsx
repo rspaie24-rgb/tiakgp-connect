@@ -11,30 +11,35 @@ const OPTIONS: {
   title: string;
   emoji: string;
   description: string;
+  whatYouSee: string;
 }[] = [
   {
     role: "particulier",
     title: "Personnel",
     emoji: "👤",
     description: "Je cherche un Tiak-Tiak ou un GP pour envoyer un colis.",
+    whatYouSee: "Tu verras toutes les offres et tu pourras publier « je cherche ».",
   },
   {
     role: "commercant",
     title: "Commerçant",
     emoji: "🏪",
     description: "Je suis un commerce et j'ai besoin de livraisons régulières.",
+    whatYouSee: "Même accès que Personnel + possibilité de publier des demandes.",
   },
   {
     role: "tiak_tiak",
     title: "Tiak-Tiak",
     emoji: "🛵",
-    description: "Je livre en local (Dakar, Thiès…). Je publie mes disponibilités.",
+    description: "Je livre en local. Je publie mes disponibilités.",
+    whatYouSee: "Tu verras les demandes clients (pas les autres Tiak-Tiak).",
   },
   {
     role: "gp",
     title: "GP",
     emoji: "✈️",
-    description: "Je voyage (Sénégal ↔ France…). Je publie mes trajets et capacité.",
+    description: "Je voyage (Sénégal, France, Maroc, Chine, Dubaï, Turquie…).",
+    whatYouSee: "Tu verras les demandes clients qui cherchent un GP.",
   },
 ];
 
@@ -50,7 +55,6 @@ export default function OnboardingPage() {
       return;
     }
     if (!isSupabaseConfigured()) {
-      // Mode démo sans Supabase
       localStorage.setItem("yobbugo_role", selected);
       router.push("/dashboard");
       return;
@@ -69,7 +73,6 @@ export default function OnboardingPage() {
         return;
       }
 
-      // Upsert role (one primary role for MVP)
       await supabase.from("user_roles").delete().eq("user_id", user.id);
       const { error } = await supabase.from("user_roles").insert({
         user_id: user.id,
@@ -77,9 +80,7 @@ export default function OnboardingPage() {
       });
 
       if (error) {
-        // Fallback local if RLS blocks
         localStorage.setItem("yobbugo_role", selected);
-        setMessage("Profil enregistré localement : " + error.message);
       }
 
       if (selected === "tiak_tiak" || selected === "gp") {
@@ -104,7 +105,7 @@ export default function OnboardingPage() {
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-2">Bienvenue sur YobbuGo</h1>
         <p className="text-[#698084]">
-          Choisis ton profil pour personnaliser ton expérience. Tu pourras le modifier plus tard.
+          Choisis ton profil. Tu pourras le modifier plus tard.
         </p>
       </div>
 
@@ -122,7 +123,10 @@ export default function OnboardingPage() {
           >
             <div className="text-3xl mb-2">{opt.emoji}</div>
             <div className="font-bold text-lg mb-1">{opt.title}</div>
-            <p className="text-sm text-[#425d61]">{opt.description}</p>
+            <p className="text-sm text-[#425d61] mb-2">{opt.description}</p>
+            {selected === opt.role && (
+              <p className="text-xs text-[#176c64] font-medium">{opt.whatYouSee}</p>
+            )}
           </button>
         ))}
       </div>
