@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { TransporterCard } from "@/components/TransporterCard";
 import { SeekCta } from "@/components/SeekCta";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { AppRole } from "@/lib/roles";
 import { canSeeGpOffers, canSeeSeekGp } from "@/lib/visibility";
+import { isLaunchFreePeriod } from "@/lib/subscription";
 
 type Trip = {
   id: number;
@@ -25,6 +27,7 @@ type Seek = {
   desired_date: string;
   details: string;
   author: string;
+  phone: string | null;
 };
 
 function formatDate(d: string) {
@@ -48,6 +51,7 @@ export default function GpPage() {
   const [results, setResults] = useState<Trip[]>([]);
   const [seeks, setSeeks] = useState<Seek[]>([]);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [hasContactAccess, setHasContactAccess] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
 
@@ -78,10 +82,24 @@ export default function GpPage() {
         if (!userRole) {
           userRole = localStorage.getItem("yobbugo_role") as AppRole | null;
         }
+
+        // Contact access: free launch OR active subscription
+        if (isLaunchFreePeriod() && (userRole === "gp" || userRole === "tiak_tiak")) {
+          setHasContactAccess(true);
+        } else {
+          const { data: sub } = await supabase
+            .from("subscriptions")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("status", "active")
+            .gt("ends_at", new Date().toISOString())
+            .limit(1)
+            .maybeSingle();
+          setHasContactAccess(!!sub);
+        }
       }
       setRole(userRole);
 
-      // Offres GP — uniquement si le profil a le droit de les voir
       if (canSeeGpOffers(userRole)) {
         const { data, error: qErr } = await supabase
           .from("gp_trips")
@@ -119,7 +137,6 @@ export default function GpPage() {
         }
       }
 
-      // Demandes clients — visibles par les GP
       if (canSeeSeekGp(userRole)) {
         const { data: seekData, error: seekErr } = await supabase
           .from("seek_posts")
@@ -128,19 +145,21 @@ export default function GpPage() {
           .eq("status", "active")
           .order("created_at", { ascending: false });
 
-        // Ne pas afficher d'erreur rouge pour un simple vide ; seulement si requête KO
         if (seekErr) {
           console.warn("seek_posts", seekErr.message);
         } else {
           const authorIds = [...new Set((seekData || []).map(s => s.author_id).filter(Boolean))];
-          const names: Record<string, string> = {};
+          const profilesById: Record<string, { name: string; phone: string | null }> = {};
           if (authorIds.length) {
             const { data: profiles } = await supabase
               .from("profiles")
-              .select("id, display_name")
+              .select("id, display_name, phone")
               .in("id", authorIds);
             profiles?.forEach(p => {
-              if (p.display_name) names[p.id] = p.display_name;
+              profilesById[p.id] = {
+                name: p.display_name || "Client",
+                phone: p.phone || null,
+              };
             });
           }
           setSeeks(
@@ -150,7 +169,8 @@ export default function GpPage() {
               destination: s.destination || "",
               desired_date: s.desired_date || "",
               details: s.details || "",
-              author: names[s.author_id as string] || "Client",
+              author: profilesById[s.author_id as string]?.name || "Client",
+              phone: profilesById[s.author_id as string]?.phone || null,
             }))
           );
         }
@@ -279,6 +299,15 @@ export default function GpPage() {
       {showSeeks && (
         <div>
           <h2 className="text-xl font-bold mb-4">Clients qui cherchent un GP</h2>
+          {!hasContactAccess && (
+            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm">
+              Les coordonnées sont masquées.{" "}
+              <Link href="/abonnement" className="underline font-semibold text-amber-900">
+                Active ton accès
+              </Link>{" "}
+              pour les voir et appeler les clients.
+            </div>
+          )}
           {seeks.length === 0 ? (
             <p className="text-sm text-[#698084]">Aucune demande pour le moment.</p>
           ) : (
@@ -293,6 +322,20 @@ export default function GpPage() {
                     📅 Date souhaitée : {formatDate(s.desired_date)}
                   </div>
                   {s.details && <p className="text-sm mt-2">{s.details}</p>}
+                  <div className="mt-3 text-sm">
+                    {hasContactAccess && s.phone ? (
+                      <a
+                        href={`tel:${s.phone}`}
+                        className="inline-flex items-center gap-1 text-[#176c64] font-semibold"
+                      >
+                        📞 {s.phone}
+                      </a>
+                    ) : hasContactAccess ? (
+                      <span className="text-[#698084]">Téléphone non renseigné</span>
+                    ) : (
+                      <span className="text-amber-700">🔒 Coordonnées masquées</span>
+                    )}
+                  </div>
                 </article>
               ))}
             </div>
