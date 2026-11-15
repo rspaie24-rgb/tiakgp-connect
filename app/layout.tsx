@@ -22,6 +22,7 @@ export default function RootLayout({
           <nav className="flex gap-3 sm:gap-4 text-sm flex-wrap justify-end">
             <Link href="/local" className="hover:underline">Local</Link>
             <Link href="/gp" className="hover:underline">GP</Link>
+            <Link href="/chercher" className="hover:underline">Je cherche</Link>
             <Link href="/publish" className="hover:underline">Publier</Link>
             <Link href="/dashboard" className="hover:underline">Mon compte</Link>
             <Link href="/login" className="hover:underline">Connexion</Link>
