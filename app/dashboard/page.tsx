@@ -16,11 +16,20 @@ type MyAd = {
   extra?: string;
 };
 
+type MySeek = {
+  id: number;
+  kind: string;
+  title: string;
+  status: string;
+  contact_count: number;
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const [role, setRole] = useState<AppRole | null>(null);
   const [name, setName] = useState("");
   const [ads, setAds] = useState<MyAd[]>([]);
+  const [seeks, setSeeks] = useState<MySeek[]>([]);
   const [loading, setLoading] = useState(true);
   const [adsError, setAdsError] = useState("");
 
@@ -108,10 +117,42 @@ export default function DashboardPage() {
       });
 
       setAds(list);
+
+      // Demandes du chercheur
+      const { data: mySeeks } = await supabase
+        .from("seek_posts")
+        .select("id, kind, origin, destination, status, contact_count")
+        .eq("author_id", user.id)
+        .order("created_at", { ascending: false });
+
+      setSeeks(
+        (mySeeks || []).map(s => ({
+          id: Number(s.id),
+          kind: s.kind || "",
+          title: `${s.origin || "?"} → ${s.destination || "?"}`,
+          status: s.status || "active",
+          contact_count: s.contact_count || 0,
+        }))
+      );
+
       setLoading(false);
     }
     load();
   }, [router]);
+
+  async function updateSeek(id: number, status: string, resetCount = false) {
+    const supabase = createClient();
+    const updates: { status: string; contact_count?: number } = { status };
+    if (resetCount) updates.contact_count = 0;
+    await supabase.from("seek_posts").update(updates).eq("id", id);
+    setSeeks(prev =>
+      prev.map(s =>
+        s.id === id
+          ? { ...s, status, contact_count: resetCount ? 0 : s.contact_count }
+          : s
+      )
+    );
+  }
 
   if (loading) {
     return <p className="text-center text-[#698084]">Chargement…</p>;
@@ -140,7 +181,6 @@ export default function DashboardPage() {
             <h2 className="font-bold text-lg mb-2">Espace transporteur</h2>
             <p className="text-sm text-[#425d61] mb-4">
               Publie et mets à jour tes disponibilités. Le paiement du colis reste direct avec le client.
-              Lancement gratuit — maximum de visibilité.
             </p>
             <Link
               href="/publish"
@@ -201,7 +241,56 @@ export default function DashboardPage() {
               <Link href="/gp" className="bg-[#176c64] text-white font-semibold rounded-xl px-5 py-3">
                 ✈️ GP
               </Link>
+              <Link href="/chercher" className="bg-[#efbb45] text-[#243234] font-semibold rounded-xl px-5 py-3">
+                + Publier une demande
+              </Link>
             </div>
+          </div>
+
+          <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
+            <h2 className="font-bold mb-4">Mes demandes ({seeks.length})</h2>
+            {seeks.length === 0 ? (
+              <p className="text-sm text-[#698084]">Aucune demande pour le moment.</p>
+            ) : (
+              <ul className="space-y-3">
+                {seeks.map(s => (
+                  <li
+                    key={s.id}
+                    className="border border-[#e0e9e7] rounded-xl p-4"
+                  >
+                    <div className="flex justify-between items-start gap-3">
+                      <div>
+                        <span className="text-xs font-bold uppercase text-[#698084]">
+                          {s.kind === "gp" ? "✈️ GP" : "🛵 Tiak"}
+                        </span>
+                        <div className="font-semibold">{s.title}</div>
+                        <div className="text-xs text-[#698084] mt-1">
+                          Contacts : {s.contact_count}/5 · Statut : {s.status}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {s.status !== "closed" && (
+                        <button
+                          onClick={() => updateSeek(s.id, "closed")}
+                          className="text-xs bg-red-50 text-red-700 px-3 py-1 rounded-lg"
+                        >
+                          Clôturer (trouvé)
+                        </button>
+                      )}
+                      {(s.status === "hidden" || s.status === "closed") && (
+                        <button
+                          onClick={() => updateSeek(s.id, "active", true)}
+                          className="text-xs bg-[#e3f6e8] text-[#23754a] px-3 py-1 rounded-lg"
+                        >
+                          Réactiver
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       )}
