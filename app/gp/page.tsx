@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { TransporterCard } from "@/components/TransporterCard";
 import { SeekCta } from "@/components/SeekCta";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { AppRole } from "@/lib/roles";
 import { canSeeGpOffers, canSeeSeekGp } from "@/lib/visibility";
-import { isLaunchFreePeriod } from "@/lib/subscription";
 
 type Trip = {
   id: number;
@@ -51,7 +49,6 @@ export default function GpPage() {
   const [results, setResults] = useState<Trip[]>([]);
   const [seeks, setSeeks] = useState<Seek[]>([]);
   const [role, setRole] = useState<AppRole | null>(null);
-  const [hasContactAccess, setHasContactAccess] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
 
@@ -81,21 +78,6 @@ export default function GpPage() {
         userRole = (roles?.[0]?.role as AppRole) || null;
         if (!userRole) {
           userRole = localStorage.getItem("yobbugo_role") as AppRole | null;
-        }
-
-        // Contact access: free launch OR active subscription
-        if (isLaunchFreePeriod() && (userRole === "gp" || userRole === "tiak_tiak")) {
-          setHasContactAccess(true);
-        } else {
-          const { data: sub } = await supabase
-            .from("subscriptions")
-            .select("id")
-            .eq("user_id", user.id)
-            .eq("status", "active")
-            .gt("ends_at", new Date().toISOString())
-            .limit(1)
-            .maybeSingle();
-          setHasContactAccess(!!sub);
         }
       }
       setRole(userRole);
@@ -299,15 +281,6 @@ export default function GpPage() {
       {showSeeks && (
         <div>
           <h2 className="text-xl font-bold mb-4">Clients qui cherchent un GP</h2>
-          {!hasContactAccess && (
-            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm">
-              Les coordonnées sont masquées.{" "}
-              <Link href="/abonnement" className="underline font-semibold text-amber-900">
-                Active ton accès
-              </Link>{" "}
-              pour les voir et appeler les clients.
-            </div>
-          )}
           {seeks.length === 0 ? (
             <p className="text-sm text-[#698084]">Aucune demande pour le moment.</p>
           ) : (
@@ -323,17 +296,15 @@ export default function GpPage() {
                   </div>
                   {s.details && <p className="text-sm mt-2">{s.details}</p>}
                   <div className="mt-3 text-sm">
-                    {hasContactAccess && s.phone ? (
+                    {s.phone ? (
                       <a
                         href={`tel:${s.phone}`}
                         className="inline-flex items-center gap-1 text-[#176c64] font-semibold"
                       >
                         📞 {s.phone}
                       </a>
-                    ) : hasContactAccess ? (
-                      <span className="text-[#698084]">Téléphone non renseigné</span>
                     ) : (
-                      <span className="text-amber-700">🔒 Coordonnées masquées</span>
+                      <span className="text-[#698084]">Téléphone non renseigné</span>
                     )}
                   </div>
                 </article>
