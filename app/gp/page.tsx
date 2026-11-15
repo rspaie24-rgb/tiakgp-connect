@@ -28,6 +28,22 @@ type Seek = {
   phone: string | null;
 };
 
+const SUGGESTED_CITIES = [
+  "Dakar",
+  "Paris",
+  "Casablanca",
+  "Rabat",
+  "Dubaï",
+  "Abu Dhabi",
+  "Istanbul",
+  "Ankara",
+  "Guangzhou",
+  "Beijing",
+  "Shanghai",
+  "Lyon",
+  "Marseille",
+];
+
 function formatDate(d: string) {
   if (!d) return "À préciser";
   try {
@@ -190,6 +206,10 @@ export default function GpPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-2">GP international</h1>
+      <p className="text-sm text-[#698084] mb-4">
+        Sénégal · France · Maroc · Chine · Dubaï · Turquie
+      </p>
+
       {role === "gp" && (
         <p className="text-sm text-[#698084] mb-4">
           En tant que GP, tu vois les demandes des clients qui cherchent un GP (pas les offres des
@@ -199,24 +219,36 @@ export default function GpPage() {
 
       {showOffers && (
         <>
-          <div className="bg-white border border-[#e1e9e8] rounded-2xl p-6 mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white border border-[#e1e9e8] rounded-2xl p-6 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-bold mb-1">Ville de départ</label>
               <input
                 value={from}
                 onChange={e => setFrom(e.target.value)}
-                placeholder="Dakar, Paris…"
+                list="cities-from"
+                placeholder="Dakar, Paris, Casablanca, Dubaï…"
                 className="w-full border border-[#d3e0dd] rounded-lg p-3"
               />
+              <datalist id="cities-from">
+                {SUGGESTED_CITIES.map(c => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
             </div>
             <div>
               <label className="block text-xs font-bold mb-1">Destination</label>
               <input
                 value={to}
                 onChange={e => setTo(e.target.value)}
-                placeholder="Paris…"
+                list="cities-to"
+                placeholder="Paris, Istanbul, Guangzhou…"
                 className="w-full border border-[#d3e0dd] rounded-lg p-3"
               />
+              <datalist id="cities-to">
+                {SUGGESTED_CITIES.map(c => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
             </div>
             <div>
               <label className="block text-xs font-bold mb-1">Départ à partir du</label>
@@ -235,6 +267,21 @@ export default function GpPage() {
                 Rechercher
               </button>
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-6">
+            {SUGGESTED_CITIES.slice(0, 8).map(c => (
+              <button
+                key={c}
+                onClick={() => {
+                  setTo(c);
+                  setResults(all.filter(t => t.to.toLowerCase().includes(c.toLowerCase())));
+                }}
+                className="text-xs bg-[#e3f6e8] text-[#23754a] px-3 py-1 rounded-full"
+              >
+                {c}
+              </button>
+            ))}
           </div>
 
           <div className="flex justify-between items-center mb-4">
