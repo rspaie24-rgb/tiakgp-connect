@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { AppRole } from "@/lib/roles";
 import { canSeeGpOffers, canSeeSeekGp } from "@/lib/visibility";
+import { registerContactClick } from "@/lib/seek-contact";
+import { whatsappLink, telLink } from "@/lib/contact";
 
 type Trip = {
   id: number;
@@ -26,6 +28,7 @@ type Seek = {
   details: string;
   author: string;
   phone: string | null;
+  contact_count: number;
 };
 
 const SUGGESTED_CITIES = [
@@ -65,6 +68,7 @@ export default function GpPage() {
   const [results, setResults] = useState<Trip[]>([]);
   const [seeks, setSeeks] = useState<Seek[]>([]);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [me, setMe] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
 
@@ -83,6 +87,8 @@ export default function GpPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
+      if (user) setMe(user.id);
 
       let userRole: AppRole | null = null;
       if (user) {
@@ -138,9 +144,10 @@ export default function GpPage() {
       if (canSeeSeekGp(userRole)) {
         const { data: seekData, error: seekErr } = await supabase
           .from("seek_posts")
-          .select("id, origin, destination, desired_date, details, author_id")
+          .select("id, origin, destination, desired_date, details, author_id, contact_count")
           .eq("kind", "gp")
           .eq("status", "active")
+          .lt("contact_count", 5)
           .order("created_at", { ascending: false });
 
         if (seekErr) {
@@ -169,6 +176,7 @@ export default function GpPage() {
               details: s.details || "",
               author: profilesById[s.author_id as string]?.name || "Client",
               phone: profilesById[s.author_id as string]?.phone || null,
+              contact_count: s.contact_count || 0,
             }))
           );
         }
@@ -188,6 +196,18 @@ export default function GpPage() {
         return fromOk && toOk && dateOk;
       })
     );
+  }
+
+  async function onContact(seekId: number) {
+    if (!me) return;
+    const res = await registerContactClick(seekId, me);
+    if (res.hidden) {
+      setSeeks(prev => prev.filter(s => s.id !== seekId));
+    } else if (res.count) {
+      setSeeks(prev =>
+        prev.map(s => (s.id === seekId ? { ...s, contact_count: res.count! } : s))
+      );
+    }
   }
 
   const showOffers = ready && canSeeGpOffers(role);
@@ -332,30 +352,45 @@ export default function GpPage() {
             <p className="text-sm text-[#698084]">Aucune demande pour le moment.</p>
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
-              {seeks.map(s => (
-                <article key={s.id} className="bg-white border border-[#e0e9e7] rounded-2xl p-5">
-                  <div className="font-bold">{s.author}</div>
-                  <div className="text-sm mt-2">
-                    🌍 {s.origin} → {s.destination}
-                  </div>
-                  <div className="text-sm text-[#698084]">
-                    📅 Date souhaitée : {formatDate(s.desired_date)}
-                  </div>
-                  {s.details && <p className="text-sm mt-2">{s.details}</p>}
-                  <div className="mt-3 text-sm">
-                    {s.phone ? (
-                      <a
-                        href={`tel:${s.phone}`}
-                        className="inline-flex items-center gap-1 text-[#176c64] font-semibold"
-                      >
-                        📞 {s.phone}
-                      </a>
-                    ) : (
-                      <span className="text-[#698084]">Téléphone non renseigné</span>
-                    )}
-                  </div>
-                </article>
-              ))}
+              {seeks.map(s => {
+                const wa = whatsappLink(s.phone, `Bonjour ${s.author}, je vous contacte via YobbuGo.`);
+                const tel = telLink(s.phone);
+                return (
+                  <article key={s.id} className="bg-white border border-[#e0e9e7] rounded-2xl p-5">
+                    <div className="font-bold">{s.author}</div>
+                    <div className="text-sm mt-2">🌍 {s.origin} → {s.destination}</div>
+                    <div className="text-sm text-[#698084]">
+                      📅 Date souhaitée : {formatDate(s.desired_date)}
+                    </div>
+                    {s.details && <p className="text-sm mt-2">{s.details}</p>}
+                    <div className="text-xs text-[#698084] mt-1">
+                      Contacts : {s.contact_count}/5
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                      {tel && (
+                        <a
+                          href={tel}
+                          onClick={() => onContact(s.id)}
+                          className="text-[#176c64] font-semibold"
+                        >
+                          📞 Appeler
+                        </a>
+                      )}
+                      {wa && (
+                        <a
+                          href={wa}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => onContact(s.id)}
+                          className="text-[#25d366] font-semibold"
+                        >
+                          WhatsApp
+                        </a>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>
