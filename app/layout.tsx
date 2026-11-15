@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "YobbuGo",
-  description: "Marketplace de transport de colis — Tiak-Tiak local et GP international (Sénégal ↔ France)",
+  description: "Marketplace de transport de colis — Tiak-Tiak local et GP international",
 };
 
 export default function RootLayout({
@@ -16,8 +17,11 @@ export default function RootLayout({
     <html lang="fr">
       <body className="min-h-screen antialiased flex flex-col">
         <header className="bg-[#103c40] text-white px-5 py-4 flex items-center justify-between gap-4">
-          <Link href="/" className="font-extrabold text-2xl tracking-tight shrink-0">
-            Yobbu<span className="text-[#f5c65d]">Go</span>
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <Logo className="w-9 h-9" />
+            <span className="font-extrabold text-2xl tracking-tight">
+              Yobbu<span className="text-[#f5c65d]">Go</span>
+            </span>
           </Link>
           <nav className="flex gap-3 sm:gap-4 text-sm flex-wrap justify-end">
             <Link href="/local" className="hover:underline">Local</Link>
