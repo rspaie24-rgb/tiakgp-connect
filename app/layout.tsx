@@ -1,11 +1,24 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "YobbuGo",
   description: "Marketplace de transport de colis — Tiak-Tiak local et GP international",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "YobbuGo",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#103c40",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -15,6 +28,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
+      <head>
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js');
+                });
+              }
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-screen antialiased flex flex-col">
         <header className="bg-[#103c40] text-white px-5 py-4 flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2 shrink-0">
@@ -44,6 +71,8 @@ export default function RootLayout({
           </div>
           <p>© {new Date().getFullYear()} YobbuGo — Astou. Paiement direct client ↔ transporteur.</p>
         </footer>
+
+        <InstallPrompt />
       </body>
     </html>
   );
