@@ -3,8 +3,8 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TiakGP Connect",
-  description: "Marketplace de transport de colis — Tiak-Tiak local et GP international",
+  title: "YobbuGo",
+  description: "Marketplace de transport de colis — Tiak-Tiak local et GP international (Sénégal ↔ France)",
 };
 
 export default function RootLayout({
@@ -16,8 +16,8 @@ export default function RootLayout({
     <html lang="fr">
       <body className="min-h-screen antialiased">
         <header className="bg-[#103c40] text-white px-5 py-4 flex items-center justify-between">
-          <Link href="/" className="font-extrabold text-2xl">
-            Tiak<span className="text-[#f5c65d]">GP</span> Connect
+          <Link href="/" className="font-extrabold text-2xl tracking-tight">
+            Yobbu<span className="text-[#f5c65d]">Go</span>
           </Link>
           <nav className="flex gap-4 text-sm flex-wrap">
             <Link href="/local" className="hover:underline">Local</Link>

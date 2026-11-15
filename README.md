@@ -1,6 +1,8 @@
-# TiakGP Connect
+# YobbuGo
 
 Marketplace web mobile-first de mise en relation pour le transport de colis au Sénégal (Tiak-Tiak) et à l'international Sénégal ↔ France (GP).
+
+**Ancien nom de travail :** TiakGP Connect.
 
 **Paiement :** exclusivement direct entre client et transporteur (hors plateforme).
 
@@ -9,26 +11,23 @@ Marketplace web mobile-first de mise en relation pour le transport de colis au S
 - Next.js 15 (App Router) + TypeScript + Tailwind CSS
 - Supabase (Auth, Postgres, RLS)
 
-## Configuration Supabase (obligatoire pour auth réelle)
+## Configuration Supabase
 
-1. Crée un projet sur [https://supabase.com](https://supabase.com)
-2. **SQL** → New query → colle et exécute le fichier `supabase/migrations/0001_initial_schema.sql`
-3. **Project Settings → API** : copie
-   - Project URL → `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon` `public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. **Auth → Providers** : Email activé (confirmation e-mail optionnelle en dev)
-5. Variables d'environnement :
+1. Projet Supabase : `https://babzsgakaxovdkszrtip.supabase.co`
+2. **SQL Editor** → exécuter `supabase/migrations/0001_initial_schema.sql`
+3. Variables d'environnement :
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ### Local
 ```bash
 cp .env.example .env.local
-# édite .env.local avec tes clés
 npm install
 npm run dev
 ```
 
 ### Vercel
-Project → Settings → Environment Variables → ajoute les deux `NEXT_PUBLIC_*`, puis Redeploy.
+Settings → Environment Variables → ajouter les deux clés → Redeploy.
 
 ## Pages
 
@@ -39,17 +38,10 @@ Project → Settings → Environment Variables → ajoute les deux `NEXT_PUBLIC_
 - `/publish` Publier une disponibilité
 - `/login` Auth Supabase
 - `/dashboard` Tableau de bord
-- `/admin` Signalements & requêtes (mock admin pour l'instant)
+- `/admin` Signalements & requêtes
 
-## Aperçu live
+## Live
 
 https://tiakgp-connect.vercel.app
 
-## Prochaines étapes
-
-- Brancher listes Local/GP sur tables Supabase (fallback mock si non configuré)
-- Dashboard dynamique (demandes réelles)
-- Messagerie liée aux demandes
-- Rôle admin + politiques RLS admin
-
-> Aucun paiement réel. Données sensibles protégées par RLS.
+> Aucun paiement réel. Données protégées par RLS.
