@@ -14,7 +14,7 @@ export default function Home() {
         <div className="flex flex-wrap gap-3">
           <span className="bg-white/20 px-4 py-2 rounded-full text-sm">✓ Profils vérifiables</span>
           <span className="bg-white/20 px-4 py-2 rounded-full text-sm">✓ Disponibilités publiées</span>
-          <span className="bg-white/20 px-4 py-2 rounded-full text-sm">✓ Avis après livraison</span>
+          <span className="bg-white/20 px-4 py-2 rounded-full text-sm">✓ Contact direct</span>
         </div>
       </section>
 
@@ -28,12 +28,12 @@ export default function Home() {
         <Link href="/gp" className="block bg-white border border-[#e0e9e7] rounded-2xl p-6 hover:shadow-lg transition">
           <div className="text-4xl mb-3">✈️</div>
           <h2 className="text-xl font-bold mb-2">GP international</h2>
-          <p className="text-[#425d61]">Trajets Paris, Lyon, Dakar… Capacité, dates de départ et retour.</p>
+          <p className="text-[#425d61]">Trajets Sénégal ↔ France. Capacité, dates et tarifs indicatifs.</p>
         </Link>
       </div>
 
       <p className="mt-12 text-sm text-[#72878a] text-center">
-        YobbuGo — paiement direct entre client et transporteur. Aucune réservation ni paiement sur la plateforme.
+        YobbuGo — paiement direct entre client et transporteur. Aucun paiement sur la plateforme.
       </p>
     </div>
   );
