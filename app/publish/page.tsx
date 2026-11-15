@@ -78,7 +78,6 @@ export default function PublishPage() {
         return;
       }
 
-      // Ensure profile row exists (FK target for transporter_id)
       const { error: profileErr } = await supabase.from("profiles").upsert({
         id: user.id,
         display_name: name || user.user_metadata?.full_name || "Utilisateur",
@@ -131,7 +130,6 @@ export default function PublishPage() {
           ? `Annonce GP enregistrée : ${from} → ${to} · ${price}`
           : `Annonce Tiak-Tiak enregistrée : ${from} / ${to} · ${price}`
       );
-      e.currentTarget.reset();
     } catch (err: unknown) {
       setMessage(errText(err));
     } finally {
