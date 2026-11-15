@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TransporterCard } from "@/components/TransporterCard";
+import { SeekCta } from "@/components/SeekCta";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { AppRole } from "@/lib/roles";
 import { canSeeLocalOffers, canSeeSeekLocal } from "@/lib/visibility";
+import { whatsappLink, telLink } from "@/lib/contact";
 
 type LocalAd = {
   id: number;
@@ -14,6 +16,7 @@ type LocalAd = {
   zone: string;
   district: string;
   price: string;
+  transporterId?: string;
 };
 
 type Seek = {
@@ -23,6 +26,8 @@ type Seek = {
   desired_time: string;
   details: string;
   author: string;
+  phone: string | null;
+  authorId: string;
 };
 
 export default function LocalPage() {
@@ -85,6 +90,7 @@ export default function LocalPage() {
             zone: row.location || "",
             district: row.district || "",
             price: row.price_label || "À convenir",
+            transporterId: row.transporter_id as string,
           }));
           setAll(mapped);
           setResults(mapped);
@@ -100,14 +106,14 @@ export default function LocalPage() {
           .order("created_at", { ascending: false });
 
         const authorIds = [...new Set((seekData || []).map(s => s.author_id).filter(Boolean))];
-        const names: Record<string, string> = {};
+        const profilesById: Record<string, { name: string; phone: string | null }> = {};
         if (authorIds.length) {
           const { data: profiles } = await supabase
             .from("profiles")
-            .select("id, display_name")
+            .select("id, display_name, phone")
             .in("id", authorIds);
           profiles?.forEach(p => {
-            if (p.display_name) names[p.id] = p.display_name;
+            profilesById[p.id] = { name: p.display_name || "Client", phone: p.phone || null };
           });
         }
         setSeeks(
@@ -117,7 +123,9 @@ export default function LocalPage() {
             destination: s.destination || "",
             desired_time: s.desired_time || "",
             details: s.details || "",
-            author: names[s.author_id as string] || "Client",
+            author: profilesById[s.author_id as string]?.name || "Client",
+            phone: profilesById[s.author_id as string]?.phone || null,
+            authorId: s.author_id as string,
           }))
         );
       }
@@ -140,6 +148,7 @@ export default function LocalPage() {
 
   const showOffers = canSeeLocalOffers(role);
   const showSeeks = canSeeSeekLocal(role);
+  const isClient = role === "particulier" || role === "commercant" || role === null;
 
   return (
     <div>
@@ -173,32 +182,43 @@ export default function LocalPage() {
 
           {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {loading ? (
               <div className="col-span-full text-center text-[#698084]">Chargement…</div>
             ) : results.length === 0 ? (
               <div className="col-span-full text-center bg-white p-8 rounded-2xl">Aucune disponibilité pour le moment.</div>
             ) : (
               results.map(t => (
-                <TransporterCard
-                  key={t.id}
-                  id={t.id}
-                  name={t.name}
-                  rating="—"
-                  reviews={0}
-                  available={true}
-                  price={t.price}
-                  icon="🛵"
-                  details={
-                    <>
-                      📍 {t.zone}<br />
-                      🗺️ {t.district}
-                    </>
-                  }
-                />
+                <div key={t.id} className="relative">
+                  <TransporterCard
+                    id={t.id}
+                    name={t.name}
+                    rating="—"
+                    reviews={0}
+                    available={true}
+                    price={t.price}
+                    icon="🛵"
+                    details={
+                      <>
+                        📍 {t.zone}<br />
+                        🗺️ {t.district}
+                      </>
+                    }
+                  />
+                  {t.transporterId && (
+                    <Link
+                      href={`/profil/${t.transporterId}`}
+                      className="absolute bottom-3 right-3 text-xs bg-[#176c64] text-white px-2 py-1 rounded-lg"
+                    >
+                      Voir profil
+                    </Link>
+                  )}
+                </div>
               ))
             )}
           </div>
+
+          {isClient && <SeekCta kind="tiak" />}
         </>
       )}
 
@@ -209,25 +229,36 @@ export default function LocalPage() {
             <p className="text-sm text-[#698084]">Aucune demande pour le moment.</p>
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
-              {seeks.map(s => (
-                <article key={s.id} className="bg-white border border-[#e0e9e7] rounded-2xl p-5">
-                  <div className="font-bold">{s.author}</div>
-                  <div className="text-sm mt-2">📍 {s.origin} → {s.destination}</div>
-                  <div className="text-sm text-[#698084]">🕐 Créneau : {s.desired_time || "À préciser"}</div>
-                  {s.details && <p className="text-sm mt-2">{s.details}</p>}
-                </article>
-              ))}
+              {seeks.map(s => {
+                const wa = whatsappLink(s.phone, `Bonjour ${s.author}, je vous contacte via YobbuGo pour votre demande Tiak-Tiak.`);
+                const tel = telLink(s.phone);
+                return (
+                  <article key={s.id} className="bg-white border border-[#e0e9e7] rounded-2xl p-5">
+                    <div className="font-bold">{s.author}</div>
+                    <div className="text-sm mt-2">📍 {s.origin} → {s.destination}</div>
+                    <div className="text-sm text-[#698084]">🕐 Créneau : {s.desired_time || "À préciser"}</div>
+                    {s.details && <p className="text-sm mt-2">{s.details}</p>}
+                    <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                      {tel && (
+                        <a href={tel} className="text-[#176c64] font-semibold">
+                          📞 Appeler
+                        </a>
+                      )}
+                      {wa && (
+                        <a href={wa} target="_blank" rel="noopener noreferrer" className="text-[#25d366] font-semibold">
+                          WhatsApp
+                        </a>
+                      )}
+                      <Link href={`/messages/${s.authorId}`} className="text-[#176c64] underline">
+                        Message
+                      </Link>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>
-      )}
-
-      {(role === "particulier" || role === "commercant") && (
-        <p className="mt-8 text-sm">
-          <Link href="/chercher" className="text-[#176c64] font-semibold underline">
-            Publier « Je cherche un Tiak-Tiak »
-          </Link>
-        </p>
       )}
     </div>
   );
