@@ -4,12 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { isValidPhone, normalizePhone, phoneToAuthEmail } from "@/lib/auth-phone";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const configured = isSupabaseConfigured();
@@ -17,16 +18,25 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!configured) {
-      setMessage("Supabase non configuré. Ajoute NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY.");
+      setMessage("Supabase non configuré.");
+      return;
+    }
+    if (!isValidPhone(phone)) {
+      setMessage("Numéro de téléphone invalide (ex. 77 123 45 67 ou +221 77 123 45 67).");
       return;
     }
     setLoading(true);
     setMessage("");
     try {
       const supabase = createClient();
+      const email = phoneToAuthEmail(phone);
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        setMessage(error.message);
+        setMessage(
+          error.message.includes("Invalid login")
+            ? "Numéro ou mot de passe incorrect."
+            : error.message
+        );
       } else {
         setMessage("Connecté !");
         router.push("/dashboard");
@@ -44,23 +54,50 @@ export default function LoginPage() {
       setMessage("Supabase non configuré.");
       return;
     }
-    if (!email || !password) {
-      setMessage("E-mail et mot de passe requis.");
+    if (!fullName.trim()) {
+      setMessage("Indique ton nom complet.");
+      return;
+    }
+    if (!isValidPhone(phone)) {
+      setMessage("Numéro de téléphone invalide (ex. 77 123 45 67).");
+      return;
+    }
+    if (password.length < 6) {
+      setMessage("Mot de passe : minimum 6 caractères.");
       return;
     }
     setLoading(true);
     setMessage("");
     try {
       const supabase = createClient();
+      const email = phoneToAuthEmail(phone);
+      const phoneNorm = normalizePhone(phone);
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName || email.split("@")[0] } },
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            phone: phoneNorm,
+          },
+        },
       });
       if (error) {
-        setMessage(error.message);
+        setMessage(
+          error.message.includes("already")
+            ? "Ce numéro a déjà un compte. Connecte-toi."
+            : error.message
+        );
       } else {
-        setMessage("Compte créé. Vérifie ton e-mail si la confirmation est activée, puis connecte-toi.");
+        // Best-effort: update profile phone
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from("profiles")
+            .update({ display_name: fullName.trim(), phone: phoneNorm })
+            .eq("id", user.id);
+        }
+        setMessage("Compte créé ! Tu peux te connecter avec ton numéro et mot de passe.");
       }
     } catch (err: unknown) {
       setMessage(err instanceof Error ? err.message : "Erreur d'inscription");
@@ -71,39 +108,54 @@ export default function LoginPage() {
 
   return (
     <div className="max-w-md mx-auto bg-white border border-[#e1e9e8] rounded-2xl p-8">
-      <h1 className="text-2xl font-bold mb-6">Connexion / Inscription</h1>
+      <h1 className="text-2xl font-bold mb-2">Connexion / Inscription</h1>
+      <p className="text-sm text-[#698084] mb-6">
+        Avec ton <strong>numéro de téléphone</strong> — pas besoin d&apos;e-mail.
+      </p>
 
       {!configured && (
         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
-          Supabase n'est pas encore configuré sur ce déploiement. Ajoute les variables d'environnement sur Vercel (ou en local dans .env.local).
+          Supabase n&apos;est pas encore configuré sur ce déploiement.
         </div>
       )}
 
       <form onSubmit={handleLogin} className="space-y-4">
-        <input
-          type="text"
-          placeholder="Nom affiché (inscription)"
-          value={fullName}
-          onChange={e => setFullName(e.target.value)}
-          className="w-full border border-[#d3e0dd] rounded-lg p-3"
-        />
-        <input
-          type="email"
-          required
-          placeholder="E-mail"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          className="w-full border border-[#d3e0dd] rounded-lg p-3"
-        />
-        <input
-          type="password"
-          required
-          minLength={6}
-          placeholder="Mot de passe (min. 6 caractères)"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          className="w-full border border-[#d3e0dd] rounded-lg p-3"
-        />
+        <div>
+          <label className="block text-xs font-bold mb-1">Nom complet</label>
+          <input
+            type="text"
+            placeholder="Prénom et nom"
+            value={fullName}
+            onChange={e => setFullName(e.target.value)}
+            className="w-full border border-[#d3e0dd] rounded-lg p-3"
+            autoComplete="name"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold mb-1">Téléphone</label>
+          <input
+            type="tel"
+            required
+            placeholder="77 123 45 67 ou +221…"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            className="w-full border border-[#d3e0dd] rounded-lg p-3"
+            autoComplete="tel"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold mb-1">Mot de passe</label>
+          <input
+            type="password"
+            required
+            minLength={6}
+            placeholder="Minimum 6 caractères"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            className="w-full border border-[#d3e0dd] rounded-lg p-3"
+            autoComplete="current-password"
+          />
+        </div>
         <button
           type="submit"
           disabled={loading}
@@ -122,7 +174,7 @@ export default function LoginPage() {
       </button>
       {message && <p className="mt-4 text-sm text-center">{message}</p>}
       <p className="mt-6 text-xs text-[#698084] text-center">
-        Auth Supabase. Paiement toujours hors plateforme (direct client ↔ transporteur).
+        YobbuGo — paiement direct client ↔ transporteur.
       </p>
     </div>
   );
