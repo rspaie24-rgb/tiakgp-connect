@@ -1,48 +1,140 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-
-const mockRequests = [
-  { id: 1, transporter: "Mamadou Ndiaye", status: "envoyée", type: "Local", date: "2026-11-14" },
-  { id: 2, transporter: "GP Aminata", status: "acceptée", type: "GP", date: "2026-11-10" },
-];
-
-const mockAnnonces = [
-  { id: 1, type: "Tiak-Tiak", zone: "Dakar Plateau", price: "1 500 FCFA" },
-];
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { ROLE_LABELS, isTransporter, type AppRole } from "@/lib/roles";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [role, setRole] = useState<AppRole | null>(null);
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      if (!isSupabaseConfigured()) {
+        const r = (localStorage.getItem("yobbugo_role") as AppRole) || null;
+        if (!r) {
+          router.replace("/onboarding");
+          return;
+        }
+        setRole(r);
+        setLoading(false);
+        return;
+      }
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
+      setName(
+        (user.user_metadata?.full_name as string) ||
+          user.user_metadata?.phone ||
+          "Utilisateur"
+      );
+
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .limit(1);
+
+      const r = (roles?.[0]?.role as AppRole) || (localStorage.getItem("yobbugo_role") as AppRole) || null;
+      if (!r) {
+        router.replace("/onboarding");
+        return;
+      }
+      setRole(r);
+      setLoading(false);
+    }
+    load();
+  }, [router]);
+
+  if (loading) {
+    return <p className="text-center text-[#698084]">Chargement…</p>;
+  }
+
+  const transporter = isTransporter(role);
+
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Tableau de bord (démo)</h1>
-      <p className="mb-6 text-[#698084]">Version mock — connexion Supabase demain.</p>
+      <h1 className="text-2xl font-bold mb-1">Mon compte YobbuGo</h1>
+      <p className="text-[#698084] mb-6">
+        {name && <span className="font-semibold text-[#132a35]">{name}</span>}
+        {role && (
+          <>
+            {" · "}
+            <span className="inline-block bg-[#e3f6e8] text-[#23754a] text-xs font-bold px-2 py-1 rounded-full">
+              {ROLE_LABELS[role]}
+            </span>
+          </>
+        )}
+      </p>
 
-      <div className="grid md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
-          <h2 className="font-bold mb-4">Mes demandes</h2>
-          {mockRequests.map(r => (
-            <div key={r.id} className="border-b py-3 last:border-0">
-              <div className="font-semibold">{r.transporter}</div>
-              <div className="text-sm text-[#698084]">{r.type} · {r.date} · <span className="capitalize">{r.status}</span></div>
-            </div>
-          ))}
+      {transporter ? (
+        <div className="space-y-6">
+          <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
+            <h2 className="font-bold text-lg mb-2">Espace transporteur</h2>
+            <p className="text-sm text-[#425d61] mb-4">
+              Publie tes disponibilités pour que les clients te trouvent. Le paiement se fait
+              directement avec eux.
+            </p>
+            <Link
+              href="/publish"
+              className="inline-block bg-[#efbb45] text-[#243234] font-bold rounded-xl px-6 py-3"
+            >
+              + Publier une annonce
+            </Link>
+          </div>
+          <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
+            <h2 className="font-bold mb-2">Mes annonces</h2>
+            <p className="text-sm text-[#698084]">
+              Les annonces publiées apparaîtront ici (synchronisation Supabase en cours).
+            </p>
+          </div>
         </div>
-
-        <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
-          <h2 className="font-bold mb-4">Mes annonces</h2>
-          {mockAnnonces.map(a => (
-            <div key={a.id} className="border-b py-3 last:border-0">
-              <div className="font-semibold">{a.type} — {a.zone}</div>
-              <div className="text-sm text-[#155e58] font-bold">{a.price}</div>
+      ) : (
+        <div className="space-y-6">
+          <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
+            <h2 className="font-bold text-lg mb-2">Que cherches-tu ?</h2>
+            <p className="text-sm text-[#425d61] mb-4">
+              Filtre par ville, quartier ou trajet pour trouver un transporteur.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/local"
+                className="bg-[#176c64] text-white font-semibold rounded-xl px-5 py-3"
+              >
+                🛵 Tiak-Tiak (local)
+              </Link>
+              <Link
+                href="/gp"
+                className="bg-[#176c64] text-white font-semibold rounded-xl px-5 py-3"
+              >
+                ✈️ GP international
+              </Link>
             </div>
-          ))}
-          <Link href="/publish" className="inline-block mt-4 text-[#176c64] font-semibold">+ Publier une annonce</Link>
+          </div>
+          <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
+            <h2 className="font-bold mb-2">Mes demandes</h2>
+            <p className="text-sm text-[#698084]">
+              Tes demandes de transport s&apos;afficheront ici.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="text-center">
-        <Link href="/login" className="text-sm text-[#698084] underline">Connexion (Supabase demain)</Link>
-      </div>
+      <p className="mt-8 text-center">
+        <Link href="/onboarding" className="text-sm text-[#698084] underline">
+          Changer de type de profil
+        </Link>
+      </p>
     </div>
   );
 }

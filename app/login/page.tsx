@@ -15,6 +15,32 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const configured = isSupabaseConfigured();
 
+  async function goAfterAuth() {
+    if (!configured) {
+      router.push("/onboarding");
+      return;
+    }
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      router.push("/onboarding");
+      return;
+    }
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .limit(1);
+    if (!roles?.length && !localStorage.getItem("yobbugo_role")) {
+      router.push("/onboarding");
+    } else {
+      router.push("/dashboard");
+    }
+    router.refresh();
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!configured) {
@@ -22,7 +48,7 @@ export default function LoginPage() {
       return;
     }
     if (!isValidPhone(phone)) {
-      setMessage("Numéro de téléphone invalide (ex. 77 123 45 67 ou +221 77 123 45 67).");
+      setMessage("Numéro de téléphone invalide (ex. 77 123 45 67).");
       return;
     }
     setLoading(true);
@@ -39,8 +65,7 @@ export default function LoginPage() {
         );
       } else {
         setMessage("Connecté !");
-        router.push("/dashboard");
-        router.refresh();
+        await goAfterAuth();
       }
     } catch (err: unknown) {
       setMessage(err instanceof Error ? err.message : "Erreur de connexion");
@@ -89,15 +114,18 @@ export default function LoginPage() {
             : error.message
         );
       } else {
-        // Best-effort: update profile phone
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
           await supabase
             .from("profiles")
             .update({ display_name: fullName.trim(), phone: phoneNorm })
             .eq("id", user.id);
         }
-        setMessage("Compte créé ! Tu peux te connecter avec ton numéro et mot de passe.");
+        setMessage("Compte créé ! Choisis ton profil…");
+        router.push("/onboarding");
+        router.refresh();
       }
     } catch (err: unknown) {
       setMessage(err instanceof Error ? err.message : "Erreur d'inscription");
