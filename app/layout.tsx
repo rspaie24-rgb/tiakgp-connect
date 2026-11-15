@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
-      <body className="min-h-screen antialiased">
+      <body className="min-h-screen antialiased flex flex-col">
         <header className="bg-[#103c40] text-white px-5 py-4 flex items-center justify-between gap-4">
           <Link href="/" className="font-extrabold text-2xl tracking-tight shrink-0">
             Yobbu<span className="text-[#f5c65d]">Go</span>
@@ -28,7 +28,18 @@ export default function RootLayout({
             <Link href="/login" className="hover:underline">Connexion</Link>
           </nav>
         </header>
-        <main className="max-w-5xl mx-auto px-5 py-8">{children}</main>
+
+        <main className="max-w-5xl mx-auto px-5 py-8 flex-1 w-full">{children}</main>
+
+        <footer className="border-t border-[#e0e9e7] bg-white py-6 px-5 text-center text-sm text-[#698084]">
+          <div className="flex flex-wrap justify-center gap-4 mb-2">
+            <Link href="/mentions-legales" className="hover:underline">Mentions légales</Link>
+            <Link href="/confidentialite" className="hover:underline">Confidentialité</Link>
+            <Link href="/cgu" className="hover:underline">CGU</Link>
+            <a href="mailto:rspaie24@gmail.com" className="hover:underline">Contact</a>
+          </div>
+          <p>© {new Date().getFullYear()} YobbuGo — Astou. Paiement direct client ↔ transporteur.</p>
+        </footer>
       </body>
     </html>
   );
