@@ -7,11 +7,22 @@ import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { ROLE_LABELS, isTransporter, type AppRole } from "@/lib/roles";
 
+type MyAd = {
+  id: number;
+  kind: "gp" | "local";
+  title: string;
+  price: string;
+  status: string;
+  extra?: string;
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const [role, setRole] = useState<AppRole | null>(null);
   const [name, setName] = useState("");
+  const [ads, setAds] = useState<MyAd[]>([]);
   const [loading, setLoading] = useState(true);
+  const [adsError, setAdsError] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -45,12 +56,56 @@ export default function DashboardPage() {
         .eq("user_id", user.id)
         .limit(1);
 
-      const r = (roles?.[0]?.role as AppRole) || (localStorage.getItem("yobbugo_role") as AppRole) || null;
+      const r =
+        (roles?.[0]?.role as AppRole) ||
+        (localStorage.getItem("yobbugo_role") as AppRole) ||
+        null;
       if (!r) {
         router.replace("/onboarding");
         return;
       }
       setRole(r);
+
+      // Mes annonces
+      const list: MyAd[] = [];
+      const { data: gps, error: gpErr } = await supabase
+        .from("gp_trips")
+        .select("id, origin_city, destination_city, departure_at, price_label, status")
+        .eq("transporter_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (gpErr) setAdsError(gpErr.message);
+      gps?.forEach(row => {
+        list.push({
+          id: Number(row.id),
+          kind: "gp",
+          title: `${row.origin_city || "?"} → ${row.destination_city || "?"}`,
+          price: row.price_label || "À convenir",
+          status: row.status || "active",
+          extra: row.departure_at
+            ? `Départ : ${row.departure_at}`
+            : undefined,
+        });
+      });
+
+      const { data: locals, error: localErr } = await supabase
+        .from("local_availabilities")
+        .select("id, location, district, price_label, status")
+        .eq("transporter_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (localErr && !adsError) setAdsError(localErr.message);
+      locals?.forEach(row => {
+        list.push({
+          id: Number(row.id),
+          kind: "local",
+          title: `${row.location || "?"} — ${row.district || ""}`,
+          price: row.price_label || "À convenir",
+          status: row.status || "active",
+        });
+      });
+
+      setAds(list);
       setLoading(false);
     }
     load();
@@ -92,11 +147,46 @@ export default function DashboardPage() {
               + Publier une annonce
             </Link>
           </div>
+
           <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
-            <h2 className="font-bold mb-2">Mes annonces</h2>
-            <p className="text-sm text-[#698084]">
-              Les annonces publiées apparaîtront ici (synchronisation Supabase en cours).
-            </p>
+            <h2 className="font-bold mb-4">Mes annonces ({ads.length})</h2>
+            {adsError && (
+              <p className="text-sm text-red-600 mb-3">{adsError}</p>
+            )}
+            {ads.length === 0 ? (
+              <p className="text-sm text-[#698084]">
+                Aucune annonce pour l'instant.{" "}
+                <Link href="/publish" className="underline text-[#176c64]">
+                  Publier maintenant
+                </Link>
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {ads.map(ad => (
+                  <li
+                    key={`${ad.kind}-${ad.id}`}
+                    className="border border-[#e0e9e7] rounded-xl p-4 flex flex-wrap justify-between gap-2"
+                  >
+                    <div>
+                      <span className="text-xs font-bold uppercase text-[#698084]">
+                        {ad.kind === "gp" ? "✈️ GP" : "🛵 Tiak-Tiak"}
+                      </span>
+                      <div className="font-semibold">{ad.title}</div>
+                      {ad.extra && (
+                        <div className="text-sm text-[#698084]">{ad.extra}</div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-[#155e58]">{ad.price}</div>
+                      <div className="text-xs text-[#23754a]">{ad.status}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href="/gp" className="inline-block mt-4 text-sm text-[#176c64] underline">
+              Voir le catalogue GP public
+            </Link>
           </div>
         </div>
       ) : (
@@ -124,7 +214,7 @@ export default function DashboardPage() {
           <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
             <h2 className="font-bold mb-2">Mes demandes</h2>
             <p className="text-sm text-[#698084]">
-              Tes demandes de transport s&apos;afficheront ici.
+              Tes demandes de transport s'afficheront ici.
             </p>
           </div>
         </div>
