@@ -1,49 +1,55 @@
 # TiakGP Connect
 
-Marketplace web mobile-first de mise en relation pour le transport de colis au Sénégal (Tiak-Tiak) et à l'international (GP).
+Marketplace web mobile-first de mise en relation pour le transport de colis au Sénégal (Tiak-Tiak) et à l'international Sénégal ↔ France (GP).
+
+**Paiement :** exclusivement direct entre client et transporteur (hors plateforme).
 
 ## Stack
 
 - Next.js 15 (App Router) + TypeScript + Tailwind CSS
-- Données mockées (Supabase prévu demain)
+- Supabase (Auth, Postgres, RLS)
 
-## Démarrage local
+## Configuration Supabase (obligatoire pour auth réelle)
 
+1. Crée un projet sur [https://supabase.com](https://supabase.com)
+2. **SQL** → New query → colle et exécute le fichier `supabase/migrations/0001_initial_schema.sql`
+3. **Project Settings → API** : copie
+   - Project URL → `NEXT_PUBLIC_SUPABASE_URL`
+   - `anon` `public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. **Auth → Providers** : Email activé (confirmation e-mail optionnelle en dev)
+5. Variables d'environnement :
+
+### Local
 ```bash
+cp .env.example .env.local
+# édite .env.local avec tes clés
 npm install
 npm run dev
 ```
 
-Ouvre [http://localhost:3000](http://localhost:3000).
+### Vercel
+Project → Settings → Environment Variables → ajoute les deux `NEXT_PUBLIC_*`, puis Redeploy.
 
-## Pages disponibles
+## Pages
 
-- `/` — Accueil
-- `/local` — Recherche Tiak-Tiak (mock + cartes cliquables)
-- `/gp` — Recherche GP (mock + cartes cliquables)
-- `/transporter/[id]` — Fiche transporteur + avis démo
-- `/publish` — Publier une disponibilité (démo)
-- `/dashboard` — Tableau de bord mock (demandes + annonces)
-- `/admin` — **Espace administrateur** (signalements + requêtes)
-- `/login` — Stub connexion (Supabase demain)
+- `/` Accueil
+- `/local` Recherche Tiak-Tiak
+- `/gp` Recherche GP
+- `/transporter/[id]` Fiche + Messagerie / WhatsApp
+- `/publish` Publier une disponibilité
+- `/login` Auth Supabase
+- `/dashboard` Tableau de bord
+- `/admin` Signalements & requêtes (mock admin pour l'instant)
 
-## Composants
+## Aperçu live
 
-- `components/TransporterCard.tsx` — Carte réutilisable avec lien profil + demande
-- `components/RequestDialog.tsx` — Modal de demande simulée
-
-## Notes
-
-- **Admin** : gestion des signalements et des requêtes (actions mock pour l’instant).
-- Formules de tarification GP / Tiak-Tiak et prix définitifs seront fixés à la fin.
+https://tiakgp-connect.vercel.app
 
 ## Prochaines étapes
 
-- **Demain** : intégration Supabase (auth, persistance, RLS)
-- Géolocalisation / carte
-- Messagerie
-- Avis réels après livraison
+- Brancher listes Local/GP sur tables Supabase (fallback mock si non configuré)
+- Dashboard dynamique (demandes réelles)
+- Messagerie liée aux demandes
+- Rôle admin + politiques RLS admin
 
-Voir `cahier_des_charges.md` pour le détail fonctionnel.
-
-> Aucun paiement réel. Données fictives. MVP en construction.
+> Aucun paiement réel. Données sensibles protégées par RLS.
