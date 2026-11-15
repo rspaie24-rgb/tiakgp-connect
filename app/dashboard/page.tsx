@@ -66,11 +66,10 @@ export default function DashboardPage() {
       }
       setRole(r);
 
-      // Mes annonces
       const list: MyAd[] = [];
       const { data: gps, error: gpErr } = await supabase
         .from("gp_trips")
-        .select("id, origin_city, destination_city, departure_at, price_label, status")
+        .select("id, origin_city, destination_city, departure_at, capacity_kg, price_label, status")
         .eq("transporter_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -82,9 +81,12 @@ export default function DashboardPage() {
           title: `${row.origin_city || "?"} → ${row.destination_city || "?"}`,
           price: row.price_label || "À convenir",
           status: row.status || "active",
-          extra: row.departure_at
-            ? `Départ : ${row.departure_at}`
-            : undefined,
+          extra: [
+            row.departure_at ? `Départ : ${row.departure_at}` : null,
+            row.capacity_kg != null ? `Capacité : ${row.capacity_kg} kg` : null,
+          ]
+            .filter(Boolean)
+            .join(" · "),
         });
       });
 
@@ -137,8 +139,7 @@ export default function DashboardPage() {
           <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
             <h2 className="font-bold text-lg mb-2">Espace transporteur</h2>
             <p className="text-sm text-[#425d61] mb-4">
-              Publie tes disponibilités pour que les clients te trouvent. Le paiement se fait
-              directement avec eux.
+              Publie et mets à jour tes disponibilités. Le paiement reste direct avec le client.
             </p>
             <Link
               href="/publish"
@@ -150,12 +151,10 @@ export default function DashboardPage() {
 
           <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
             <h2 className="font-bold mb-4">Mes annonces ({ads.length})</h2>
-            {adsError && (
-              <p className="text-sm text-red-600 mb-3">{adsError}</p>
-            )}
+            {adsError && <p className="text-sm text-red-600 mb-3">{adsError}</p>}
             {ads.length === 0 ? (
               <p className="text-sm text-[#698084]">
-                Aucune annonce pour l'instant.{" "}
+                Aucune annonce.{" "}
                 <Link href="/publish" className="underline text-[#176c64]">
                   Publier maintenant
                 </Link>
@@ -165,7 +164,7 @@ export default function DashboardPage() {
                 {ads.map(ad => (
                   <li
                     key={`${ad.kind}-${ad.id}`}
-                    className="border border-[#e0e9e7] rounded-xl p-4 flex flex-wrap justify-between gap-2"
+                    className="border border-[#e0e9e7] rounded-xl p-4 flex flex-wrap justify-between gap-3 items-center"
                   >
                     <div>
                       <span className="text-xs font-bold uppercase text-[#698084]">
@@ -175,47 +174,33 @@ export default function DashboardPage() {
                       {ad.extra && (
                         <div className="text-sm text-[#698084]">{ad.extra}</div>
                       )}
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-[#155e58]">{ad.price}</div>
+                      <div className="text-sm font-bold text-[#155e58] mt-1">{ad.price}</div>
                       <div className="text-xs text-[#23754a]">{ad.status}</div>
                     </div>
+                    <Link
+                      href={`/annonces/${ad.kind}/${ad.id}`}
+                      className="bg-[#176c64] text-white text-sm font-semibold rounded-lg px-4 py-2"
+                    >
+                      Modifier
+                    </Link>
                   </li>
                 ))}
               </ul>
             )}
-            <Link href="/gp" className="inline-block mt-4 text-sm text-[#176c64] underline">
-              Voir le catalogue GP public
-            </Link>
           </div>
         </div>
       ) : (
         <div className="space-y-6">
           <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
             <h2 className="font-bold text-lg mb-2">Que cherches-tu ?</h2>
-            <p className="text-sm text-[#425d61] mb-4">
-              Filtre par ville, quartier ou trajet pour trouver un transporteur.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/local"
-                className="bg-[#176c64] text-white font-semibold rounded-xl px-5 py-3"
-              >
-                🛵 Tiak-Tiak (local)
+            <div className="flex flex-wrap gap-3 mt-4">
+              <Link href="/local" className="bg-[#176c64] text-white font-semibold rounded-xl px-5 py-3">
+                🛵 Tiak-Tiak
               </Link>
-              <Link
-                href="/gp"
-                className="bg-[#176c64] text-white font-semibold rounded-xl px-5 py-3"
-              >
-                ✈️ GP international
+              <Link href="/gp" className="bg-[#176c64] text-white font-semibold rounded-xl px-5 py-3">
+                ✈️ GP
               </Link>
             </div>
-          </div>
-          <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
-            <h2 className="font-bold mb-2">Mes demandes</h2>
-            <p className="text-sm text-[#698084]">
-              Tes demandes de transport s'afficheront ici.
-            </p>
           </div>
         </div>
       )}

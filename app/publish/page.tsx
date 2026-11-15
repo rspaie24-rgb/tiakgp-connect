@@ -60,6 +60,8 @@ export default function PublishPage() {
     const to = String(form.get("to") || "").trim();
     const price = String(form.get("price") || "").trim();
     const depart = String(form.get("depart") || "") || null;
+    const capacityRaw = String(form.get("capacity") || "").trim();
+    const capacity = capacityRaw === "" ? null : Number(capacityRaw.replace(",", "."));
     const name = String(form.get("name") || displayName).trim();
 
     try {
@@ -103,6 +105,8 @@ export default function PublishPage() {
           origin_city: from,
           destination_city: to,
           departure_at: depart,
+          capacity_kg: capacity,
+          remaining_capacity_kg: capacity,
           price_label: price,
           status: "active",
         });
@@ -141,7 +145,7 @@ export default function PublishPage() {
     <div>
       <h1 className="text-2xl font-bold mb-2">Publier une disponibilité</h1>
       <p className="text-sm text-[#698084] mb-6">
-        L'annonce sera visible par les clients. Le paiement se fait directement avec eux.
+        L&apos;annonce sera visible par les clients. Tu pourras la modifier plus tard depuis ton compte.
       </p>
 
       <form
@@ -197,10 +201,23 @@ export default function PublishPage() {
           />
         </div>
         {type === "gp" && (
-          <div>
-            <label className="block text-xs font-bold mb-1">Date de départ</label>
-            <input name="depart" type="date" className="w-full border border-[#d3e0dd] rounded-lg p-3" />
-          </div>
+          <>
+            <div>
+              <label className="block text-xs font-bold mb-1">Date de départ</label>
+              <input name="depart" type="date" className="w-full border border-[#d3e0dd] rounded-lg p-3" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold mb-1">Capacité (kg)</label>
+              <input
+                name="capacity"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="Ex. 15"
+                className="w-full border border-[#d3e0dd] rounded-lg p-3"
+              />
+            </div>
+          </>
         )}
         <div className="md:col-span-2">
           <button
@@ -225,11 +242,11 @@ export default function PublishPage() {
           <p className="mt-1">{message}</p>
           {success && (
             <div className="mt-3 flex flex-wrap gap-3">
-              <Link href="/gp" className="underline font-medium">
-                Voir les GP
-              </Link>
               <Link href="/dashboard" className="underline font-medium">
-                Mon compte
+                Voir mes annonces
+              </Link>
+              <Link href="/gp" className="underline font-medium">
+                Catalogue GP
               </Link>
             </div>
           )}
