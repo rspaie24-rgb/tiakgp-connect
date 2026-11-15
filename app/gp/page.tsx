@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TransporterCard } from "@/components/TransporterCard";
+import { SeekCta } from "@/components/SeekCta";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { AppRole } from "@/lib/roles";
@@ -78,7 +79,6 @@ export default function GpPage() {
       }
       setRole(userRole);
 
-      // Offres GP : pas pour les profils GP (ils ne voient pas les autres GP)
       if (canSeeGpOffers(userRole)) {
         const { data, error: qErr } = await supabase
           .from("gp_trips")
@@ -115,7 +115,6 @@ export default function GpPage() {
         }
       }
 
-      // Demandes "je cherche un GP" : visibles par les GP
       if (canSeeSeekGp(userRole)) {
         const { data: seekData } = await supabase
           .from("seek_posts")
@@ -165,6 +164,7 @@ export default function GpPage() {
 
   const showOffers = canSeeGpOffers(role);
   const showSeeks = canSeeSeekGp(role);
+  const isClient = role === "particulier" || role === "commercant" || role === null;
 
   return (
     <div>
@@ -202,11 +202,11 @@ export default function GpPage() {
 
           {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {loading ? (
               <div className="col-span-full text-center text-[#698084]">Chargement…</div>
             ) : results.length === 0 ? (
-              <div className="col-span-full text-center bg-white p-8 rounded-2xl">Aucune offre GP pour le moment.</div>
+              <div className="col-span-full text-center bg-white p-8 rounded-2xl">Aucune offre GP pour ces critères.</div>
             ) : (
               results.map(t => (
                 <TransporterCard
@@ -229,6 +229,8 @@ export default function GpPage() {
               ))
             )}
           </div>
+
+          {isClient && <SeekCta kind="gp" />}
         </>
       )}
 
@@ -254,14 +256,6 @@ export default function GpPage() {
 
       {!showOffers && !showSeeks && !loading && (
         <p className="text-[#698084]">Rien à afficher pour ton profil sur cette page.</p>
-      )}
-
-      {(role === "particulier" || role === "commercant") && (
-        <p className="mt-8 text-sm">
-          <Link href="/chercher" className="text-[#176c64] font-semibold underline">
-            Publier « Je cherche un GP »
-          </Link>
-        </p>
       )}
     </div>
   );
