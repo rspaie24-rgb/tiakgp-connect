@@ -9,7 +9,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 function formatDate(d: string) {
   if (!d) return "À préciser";
   try {
-    return new Date(d + (d.includes("T") ? "" : "T12:00:00")).toLocaleDateString("fr-FR", {
+    return new Date(d.includes("T") ? d : d + "T12:00:00").toLocaleDateString("fr-FR", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -30,45 +30,63 @@ export default function GpPage() {
   useEffect(() => {
     async function load() {
       if (!isSupabaseConfigured()) {
-        setSource("démo");
+        setSource("démo (Supabase off)");
         return;
       }
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("gp_trips")
-          .select("id, origin_city, destination_city, departure_at, arrival_at, return_at, capacity_kg, price_label, status, transporter_id, profiles(display_name)")
-          .eq("status", "active")
-          .order("departure_at", { ascending: true });
+      const supabase = createClient();
 
-        if (error || !data) {
-          setSource("démo (" + (error?.message || "erreur") + ")");
-          return;
-        }
+      // Simple query — no join (avoids PostgREST relation errors)
+      const { data, error } = await supabase
+        .from("gp_trips")
+        .select(
+          "id, origin_city, destination_city, departure_at, arrival_at, return_at, capacity_kg, price_label, status, transporter_id"
+        )
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
 
-        const mapped: GpTrip[] = data.map((row: any) => ({
-          id: Number(row.id),
-          name: row.profiles?.display_name || "GP YobbuGo",
-          from: row.origin_city || "",
-          to: row.destination_city || "",
-          depart: row.departure_at || "",
-          arrive: row.arrival_at || row.departure_at || "",
-          returnDate: row.return_at || "À préciser",
-          capacity: row.capacity_kg ? `${row.capacity_kg} kg` : "À préciser",
-          price: row.price_label || "À convenir",
-          rating: "Nouveau",
-          reviews: 0,
-          available: true,
-        }));
-
-        // Combine real + mock so the list is never empty in MVP
-        const combined = [...mapped, ...mockGp];
-        setAll(combined);
-        setResults(combined);
-        setSource(mapped.length ? `${mapped.length} annonce(s) en base` : "démo + base vide");
-      } catch {
-        setSource("démo");
+      if (error) {
+        setSource("erreur : " + error.message);
+        setAll(mockGp);
+        setResults(mockGp);
+        return;
       }
+
+      // Optional: fetch names for transporters
+      const ids = [...new Set((data || []).map(r => r.transporter_id).filter(Boolean))];
+      const nameById: Record<string, string> = {};
+      if (ids.length) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, display_name")
+          .in("id", ids);
+        profiles?.forEach(p => {
+          if (p.display_name) nameById[p.id] = p.display_name;
+        });
+      }
+
+      const mapped: GpTrip[] = (data || []).map(row => ({
+        id: Number(row.id),
+        name: nameById[row.transporter_id as string] || "GP YobbuGo",
+        from: row.origin_city || "",
+        to: row.destination_city || "",
+        depart: row.departure_at || "",
+        arrive: row.arrival_at || row.departure_at || "",
+        returnDate: row.return_at || "À préciser",
+        capacity: row.capacity_kg ? `${row.capacity_kg} kg` : "À préciser",
+        price: row.price_label || "À convenir",
+        rating: "Nouveau",
+        reviews: 0,
+        available: true,
+      }));
+
+      const combined = [...mapped, ...mockGp];
+      setAll(combined);
+      setResults(combined);
+      setSource(
+        mapped.length
+          ? `${mapped.length} vraie(s) annonce(s) + démo`
+          : "0 en base — vérifie Table Editor → gp_trips"
+      );
     }
     load();
   }, []);
@@ -129,7 +147,7 @@ export default function GpPage() {
         ) : (
           results.map(t => (
             <TransporterCard
-              key={t.id}
+              key={`${t.id}-${t.name}`}
               id={t.id}
               name={t.name}
               rating={t.rating}
