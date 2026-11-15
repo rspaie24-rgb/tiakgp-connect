@@ -6,6 +6,14 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
+function errText(err: unknown): string {
+  if (!err) return "Erreur inconnue";
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message;
+  const o = err as { message?: string; details?: string; hint?: string; code?: string };
+  return [o.message, o.details, o.hint, o.code].filter(Boolean).join(" — ") || JSON.stringify(err);
+}
+
 export default function PublishPage() {
   const router = useRouter();
   const [type, setType] = useState<"local" | "gp">("gp");
@@ -27,7 +35,7 @@ export default function PublishPage() {
       }
       setDisplayName(
         (user.user_metadata?.full_name as string) ||
-          user.user_metadata?.phone ||
+          (user.user_metadata?.phone as string) ||
           ""
       );
       const { data: roles } = await supabase
@@ -57,7 +65,6 @@ export default function PublishPage() {
     try {
       if (!isSupabaseConfigured()) {
         setMessage("Supabase non configuré — annonce non enregistrée.");
-        setLoading(false);
         return;
       }
 
@@ -71,14 +78,24 @@ export default function PublishPage() {
         return;
       }
 
-      // Ensure transporter profile exists
-      await supabase.from("transporter_profiles").upsert({
+      // Ensure profile row exists (FK target for transporter_id)
+      const { error: profileErr } = await supabase.from("profiles").upsert({
+        id: user.id,
+        display_name: name || user.user_metadata?.full_name || "Utilisateur",
+        phone: (user.user_metadata?.phone as string) || null,
+      });
+      if (profileErr) {
+        setMessage("Profil : " + errText(profileErr));
+        return;
+      }
+
+      const { error: tpErr } = await supabase.from("transporter_profiles").upsert({
         user_id: user.id,
         kind: type === "local" ? "tiak_tiak" : "gp",
       });
-
-      if (name) {
-        await supabase.from("profiles").update({ display_name: name }).eq("id", user.id);
+      if (tpErr) {
+        setMessage("Profil transporteur : " + errText(tpErr));
+        return;
       }
 
       if (type === "gp") {
@@ -90,7 +107,10 @@ export default function PublishPage() {
           price_label: price,
           status: "active",
         });
-        if (error) throw error;
+        if (error) {
+          setMessage("GP : " + errText(error));
+          return;
+        }
       } else {
         const { error } = await supabase.from("local_availabilities").insert({
           transporter_id: user.id,
@@ -99,7 +119,10 @@ export default function PublishPage() {
           price_label: price,
           status: "active",
         });
-        if (error) throw error;
+        if (error) {
+          setMessage("Local : " + errText(error));
+          return;
+        }
       }
 
       setSuccess(true);
@@ -110,7 +133,7 @@ export default function PublishPage() {
       );
       e.currentTarget.reset();
     } catch (err: unknown) {
-      setMessage(err instanceof Error ? err.message : "Erreur lors de la publication");
+      setMessage(errText(err));
     } finally {
       setLoading(false);
     }
@@ -153,12 +176,7 @@ export default function PublishPage() {
           <label className="block text-xs font-bold mb-1">
             {type === "gp" ? "Ville de départ" : "Ville / zone"}
           </label>
-          <input
-            name="from"
-            required
-            placeholder={type === "gp" ? "Dakar" : "Dakar"}
-            className="w-full border border-[#d3e0dd] rounded-lg p-3"
-          />
+          <input name="from" required placeholder="Dakar" className="w-full border border-[#d3e0dd] rounded-lg p-3" />
         </div>
         <div>
           <label className="block text-xs font-bold mb-1">
@@ -199,7 +217,7 @@ export default function PublishPage() {
 
       {message && (
         <div
-          className={`mt-6 max-w-2xl rounded-xl p-4 text-sm ${
+          className={`mt-6 max-w-2xl rounded-xl p-4 text-sm break-words ${
             success
               ? "bg-[#e3f6e8] text-[#23754a] border border-[#b8e6c4]"
               : "bg-red-50 text-red-800 border border-red-200"
@@ -211,9 +229,6 @@ export default function PublishPage() {
             <div className="mt-3 flex flex-wrap gap-3">
               <Link href="/gp" className="underline font-medium">
                 Voir les GP
-              </Link>
-              <Link href="/local" className="underline font-medium">
-                Voir le local
               </Link>
               <Link href="/dashboard" className="underline font-medium">
                 Mon compte
