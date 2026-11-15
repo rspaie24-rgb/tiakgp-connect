@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { ROLE_LABELS, isTransporter, type AppRole } from "@/lib/roles";
+import { isLaunchFreePeriod, daysLeftInLaunch } from "@/lib/subscription";
 
 type MyAd = {
   id: number;
@@ -118,6 +119,7 @@ export default function DashboardPage() {
   }
 
   const transporter = isTransporter(role);
+  const free = isLaunchFreePeriod();
 
   return (
     <div>
@@ -139,14 +141,27 @@ export default function DashboardPage() {
           <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
             <h2 className="font-bold text-lg mb-2">Espace transporteur</h2>
             <p className="text-sm text-[#425d61] mb-4">
-              Publie et mets à jour tes disponibilités. Le paiement reste direct avec le client.
+              Publie et mets à jour tes disponibilités. Le paiement du colis reste direct avec le client.
             </p>
-            <Link
-              href="/publish"
-              className="inline-block bg-[#efbb45] text-[#243234] font-bold rounded-xl px-6 py-3"
-            >
-              + Publier une annonce
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/publish"
+                className="inline-block bg-[#efbb45] text-[#243234] font-bold rounded-xl px-6 py-3"
+              >
+                + Publier une annonce
+              </Link>
+              <Link
+                href="/abonnement"
+                className="inline-block border border-[#176c64] text-[#176c64] font-semibold rounded-xl px-6 py-3"
+              >
+                Mon abonnement
+              </Link>
+            </div>
+            {free && (
+              <p className="text-xs text-[#23754a] mt-3">
+                Lancement gratuit — {daysLeftInLaunch()} jours restants pour accéder aux coordonnées des clients.
+              </p>
+            )}
           </div>
 
           <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
