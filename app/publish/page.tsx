@@ -17,6 +17,7 @@ function errText(err: unknown): string {
 export default function PublishPage() {
   const router = useRouter();
   const [type, setType] = useState<"local" | "gp">("gp");
+  const [available, setAvailable] = useState(true);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -120,7 +121,7 @@ export default function PublishPage() {
           location: from,
           district: to,
           price_label: price,
-          status: "active",
+          status: available ? "available" : "unavailable",
         });
         if (error) {
           setMessage("Local : " + errText(error));
@@ -132,7 +133,7 @@ export default function PublishPage() {
       setMessage(
         type === "gp"
           ? `Annonce GP enregistrée : ${from} → ${to} · ${price}`
-          : `Annonce Tiak-Tiak enregistrée : ${from} / ${to} · ${price}`
+          : `Annonce Tiak-Tiak enregistrée : ${from} / ${to} · ${available ? "Disponible" : "Non disponible"}`
       );
     } catch (err: unknown) {
       setMessage(errText(err));
@@ -178,16 +179,16 @@ export default function PublishPage() {
           <label className="block text-xs font-bold mb-1">
             {type === "gp" ? "Ville de départ" : "Ville / zone"}
           </label>
-          <input name="from" required placeholder="Dakar" className="w-full border border-[#d3e0dd] rounded-lg p-3" />
+          <input name="from" required placeholder="Dakar, Pikine…" className="w-full border border-[#d3e0dd] rounded-lg p-3" />
         </div>
         <div>
           <label className="block text-xs font-bold mb-1">
-            {type === "gp" ? "Destination" : "Quartier / couverture"}
+            {type === "gp" ? "Destination" : "Alentours / couverture"}
           </label>
           <input
             name="to"
             required
-            placeholder={type === "gp" ? "Paris" : "Plateau, Médina…"}
+            placeholder={type === "gp" ? "Paris" : "Pikine et alentours, Guédiawaye…"}
             className="w-full border border-[#d3e0dd] rounded-lg p-3"
           />
         </div>
@@ -200,6 +201,20 @@ export default function PublishPage() {
             className="w-full border border-[#d3e0dd] rounded-lg p-3"
           />
         </div>
+        {type === "local" && (
+          <div className="flex items-center gap-3 pt-6">
+            <input
+              id="available"
+              type="checkbox"
+              checked={available}
+              onChange={e => setAvailable(e.target.checked)}
+              className="w-5 h-5"
+            />
+            <label htmlFor="available" className="text-sm font-semibold">
+              Disponible maintenant
+            </label>
+          </div>
+        )}
         {type === "gp" && (
           <>
             <div>
@@ -245,8 +260,8 @@ export default function PublishPage() {
               <Link href="/dashboard" className="underline font-medium">
                 Voir mes annonces
               </Link>
-              <Link href="/gp" className="underline font-medium">
-                Catalogue GP
+              <Link href="/local" className="underline font-medium">
+                Catalogue Local
               </Link>
             </div>
           )}
