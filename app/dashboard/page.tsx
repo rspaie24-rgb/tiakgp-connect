@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { ROLE_LABELS, isTransporter, type AppRole } from "@/lib/roles";
-import { LogoutButton } from "@/components/LogoutButton";
 
 type MyAd = {
   id: number;
@@ -162,10 +161,7 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-start gap-4 mb-1">
-        <h1 className="text-2xl font-bold">Mon compte YobbuGo</h1>
-        <LogoutButton className="text-[#176c64] font-semibold" />
-      </div>
+      <h1 className="text-2xl font-bold mb-1">Mon compte YobbuGo</h1>
       <p className="text-[#698084] mb-6">
         {name && <span className="font-semibold text-[#132a35]">{name}</span>}
         {role && (
