@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { ROLE_LABELS, isTransporter, type AppRole } from "@/lib/roles";
+import { ROLE_LABELS, type AppRole } from "@/lib/roles";
 import { TransporterContactSettings } from "@/components/TransporterContactSettings";
 
 type MyAd = {
@@ -77,6 +77,7 @@ export default function DashboardPage() {
       setRole(r);
 
       const list: MyAd[] = [];
+      if (r !== "tiak_tiak") {
       const { data: gps, error: gpErr } = await supabase
         .from("gp_trips")
         .select("id, origin_city, destination_city, departure_at, capacity_kg, price_label, status")
@@ -116,6 +117,7 @@ export default function DashboardPage() {
           status: row.status || "active",
         });
       });
+      }
 
       setAds(list);
 
@@ -158,7 +160,8 @@ export default function DashboardPage() {
     return <p className="text-center text-[#698084]">Chargement…</p>;
   }
 
-  const transporter = isTransporter(role);
+  const transporter = role === "gp" || role === "admin";
+  const isTiak = role === "tiak_tiak";
 
   return (
     <div>
@@ -178,7 +181,20 @@ export default function DashboardPage() {
         <Link href="/compte" className="text-[#176c64] underline">Gérer mes données et mon compte</Link>
       </p>
 
-      {transporter ? (
+      {isTiak ? (
+        <div className="space-y-6">
+          <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
+            <h2 className="font-bold text-lg mb-2">Espace Tiak-Tiak</h2>
+            <p className="text-sm text-[#425d61] mb-4">
+              Tu ne publies pas d&apos;annonce Tiak-Tiak. Consulte les demandes des particuliers et commerçants, ainsi que les offres GP.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/local" className="bg-[#176c64] text-white font-semibold rounded-xl px-5 py-3">Voir les demandes locales</Link>
+              <Link href="/gp" className="bg-[#efbb45] text-[#243234] font-semibold rounded-xl px-5 py-3">Voir les annonces GP</Link>
+            </div>
+          </div>
+        </div>
+      ) : transporter ? (
         <div className="space-y-6">
           <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
             <h2 className="font-bold text-lg mb-2">Espace transporteur</h2>

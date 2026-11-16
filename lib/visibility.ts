@@ -19,7 +19,9 @@ export function canSeeLocalOffers(role: AppRole | null): boolean {
 
 /** Qui peut voir les annonces "je cherche un GP". */
 export function canSeeSeekGp(role: AppRole | null): boolean {
-  return role === "gp" || role === "admin";
+  // Les Tiak-Tiak peuvent également consulter les demandes publiées par les
+  // particuliers et commerçants, sans pouvoir publier d'offre eux-mêmes.
+  return role === "gp" || role === "tiak_tiak" || role === "admin";
 }
 
 /** Qui peut voir les annonces "je cherche un Tiak-Tiak". */

@@ -69,20 +69,16 @@ export default function LocalPage() {
       }
       setRole(userRole);
 
-      // Charger les offres : tout le monde voit les offres, sauf le Tiak qui ne voit que les siennes
+      // Les Tiak-Tiak ne publient ni ne consultent d'offres Tiak-Tiak :
+      // ils reçoivent uniquement les demandes des particuliers/commerçants.
       const canSeeAll = canSeeLocalOffers(userRole);
-      const isTiak = userRole === "tiak_tiak";
 
-      if (canSeeAll || isTiak) {
+      if (canSeeAll) {
         let query = supabase
           .from("local_availabilities")
           .select("id, location, district, price_label, status, transporter_id")
           .in("status", ["available", "unavailable", "active"])
           .order("created_at", { ascending: false });
-
-        if (isTiak && user) {
-          query = query.eq("transporter_id", user.id);
-        }
 
         const { data, error: qErr } = await query;
 
@@ -166,7 +162,7 @@ export default function LocalPage() {
     );
   }
 
-  const showOffers = canSeeLocalOffers(role) || role === "tiak_tiak";
+  const showOffers = canSeeLocalOffers(role);
   const showSeeks = canSeeSeekLocal(role);
   const isClient = role === "particulier" || role === "commercant" || role === null;
 
@@ -175,7 +171,7 @@ export default function LocalPage() {
       <h1 className="text-2xl font-bold mb-2">Livraison locale — Tiak-Tiak</h1>
       {role === "tiak_tiak" && (
         <p className="text-sm text-[#698084] mb-4">
-          En tant que Tiak-Tiak, tu vois tes propres annonces + les demandes des clients.
+          En tant que Tiak-Tiak, tu ne publies pas d&apos;annonce : tu vois les demandes des particuliers et commerçants.
         </p>
       )}
 
@@ -197,7 +193,7 @@ export default function LocalPage() {
 
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">
-              {role === "tiak_tiak" ? "Mes annonces Tiak-Tiak" : "Offres Tiak-Tiak"}
+              Offres Tiak-Tiak
             </h2>
             <span className="text-sm text-[#698084]">{loading ? "…" : `${results.length} résultat(s)`}</span>
           </div>
@@ -209,7 +205,7 @@ export default function LocalPage() {
               <div className="col-span-full text-center text-[#698084]">Chargement…</div>
             ) : results.length === 0 ? (
               <div className="col-span-full text-center bg-white p-8 rounded-2xl">
-                {role === "tiak_tiak" ? "Tu n'as pas encore publié d'annonce." : "Aucune disponibilité pour le moment."}
+                Aucune disponibilité pour le moment.
               </div>
             ) : (
               results.map(t => (

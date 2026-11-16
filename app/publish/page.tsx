@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import type { AppRole } from "@/lib/roles";
 
 function errText(err: unknown): string {
   if (!err) return "Erreur inconnue";
@@ -22,6 +23,8 @@ export default function PublishPage() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const [role, setRole] = useState<AppRole | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -44,8 +47,10 @@ export default function PublishPage() {
         .select("role")
         .eq("user_id", user.id);
       const rolesList = roles?.map(r => r.role) || [];
-      if (rolesList.includes("tiak_tiak")) setType("local");
+      const selectedRole = (rolesList[0] as AppRole | undefined) || null;
+      setRole(selectedRole);
       if (rolesList.includes("gp")) setType("gp");
+      setReady(true);
     }
     init();
   }, [router]);
@@ -66,6 +71,10 @@ export default function PublishPage() {
     const name = String(form.get("name") || displayName).trim();
 
     try {
+      if (role === "tiak_tiak") {
+        setMessage("Les comptes Tiak-Tiak ne publient pas d'annonce. Consulte les demandes des clients depuis les catalogues.");
+        return;
+      }
       if (!isSupabaseConfigured()) {
         setMessage("Supabase non configuré — annonce non enregistrée.");
         return;
@@ -145,6 +154,19 @@ export default function PublishPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-2">Publier une disponibilité</h1>
+      {ready && role === "tiak_tiak" ? (
+        <div className="max-w-2xl bg-white border border-[#e1e9e8] rounded-2xl p-6">
+          <h2 className="font-bold text-lg mb-2">Publication non disponible pour les Tiak-Tiak</h2>
+          <p className="text-sm text-[#425d61] mb-4">
+            Les Tiak-Tiak ne publient pas d&apos;annonce. Ils consultent les demandes des particuliers et commerçants, ainsi que les annonces GP.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/local" className="bg-[#176c64] text-white font-semibold rounded-xl px-5 py-3">Voir les demandes locales</Link>
+            <Link href="/gp" className="bg-[#efbb45] text-[#243234] font-semibold rounded-xl px-5 py-3">Voir les annonces GP</Link>
+          </div>
+        </div>
+      ) : (
+      <>
       <p className="text-sm text-[#698084] mb-6">
         L&apos;annonce sera visible par les clients. Tu pourras la modifier plus tard depuis ton compte.
       </p>
@@ -266,6 +288,8 @@ export default function PublishPage() {
             </div>
           )}
         </div>
+      )}
+      </>
       )}
     </div>
   );
