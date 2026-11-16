@@ -38,6 +38,7 @@ export default function LocalPage() {
   const [results, setResults] = useState<LocalAd[]>([]);
   const [seeks, setSeeks] = useState<Seek[]>([]);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [me, setMe] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -53,6 +54,8 @@ export default function LocalPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
+      if (user) setMe(user.id);
+
       let userRole: AppRole | null = null;
       if (user) {
         const { data: roles } = await supabase
@@ -65,12 +68,22 @@ export default function LocalPage() {
       }
       setRole(userRole);
 
-      if (canSeeLocalOffers(userRole)) {
-        const { data, error: qErr } = await supabase
+      // Charger les offres : tout le monde voit les offres, sauf le Tiak qui ne voit que les siennes
+      const canSeeAll = canSeeLocalOffers(userRole);
+      const isTiak = userRole === "tiak_tiak";
+
+      if (canSeeAll || isTiak) {
+        let query = supabase
           .from("local_availabilities")
           .select("id, location, district, price_label, status, transporter_id")
           .in("status", ["available", "unavailable", "active"])
           .order("created_at", { ascending: false });
+
+        if (isTiak && user) {
+          query = query.eq("transporter_id", user.id);
+        }
+
+        const { data, error: qErr } = await query;
 
         if (qErr) setError(qErr.message);
         else {
@@ -149,7 +162,7 @@ export default function LocalPage() {
     );
   }
 
-  const showOffers = canSeeLocalOffers(role);
+  const showOffers = canSeeLocalOffers(role) || role === "tiak_tiak";
   const showSeeks = canSeeSeekLocal(role);
   const isClient = role === "particulier" || role === "commercant" || role === null;
 
@@ -158,7 +171,7 @@ export default function LocalPage() {
       <h1 className="text-2xl font-bold mb-2">Livraison locale — Tiak-Tiak</h1>
       {role === "tiak_tiak" && (
         <p className="text-sm text-[#698084] mb-4">
-          En tant que Tiak-Tiak, tu vois les demandes clients (pas les offres des autres Tiak-Tiak).
+          En tant que Tiak-Tiak, tu vois tes propres annonces + les demandes des clients.
         </p>
       )}
 
@@ -179,7 +192,9 @@ export default function LocalPage() {
           </div>
 
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Offres Tiak-Tiak</h2>
+            <h2 className="text-xl font-bold">
+              {role === "tiak_tiak" ? "Mes annonces Tiak-Tiak" : "Offres Tiak-Tiak"}
+            </h2>
             <span className="text-sm text-[#698084]">{loading ? "…" : `${results.length} résultat(s)`}</span>
           </div>
 
@@ -189,7 +204,9 @@ export default function LocalPage() {
             {loading ? (
               <div className="col-span-full text-center text-[#698084]">Chargement…</div>
             ) : results.length === 0 ? (
-              <div className="col-span-full text-center bg-white p-8 rounded-2xl">Aucune disponibilité pour le moment.</div>
+              <div className="col-span-full text-center bg-white p-8 rounded-2xl">
+                {role === "tiak_tiak" ? "Tu n'as pas encore publié d'annonce." : "Aucune disponibilité pour le moment."}
+              </div>
             ) : (
               results.map(t => (
                 <div key={t.id} className="relative">
@@ -213,7 +230,15 @@ export default function LocalPage() {
                       </>
                     }
                   />
-                  {t.transporterId && (
+                  {t.transporterId && t.transporterId === me && (
+                    <Link
+                      href={`/annonces/local/${t.id}`}
+                      className="absolute bottom-3 right-3 text-xs bg-[#176c64] text-white px-2 py-1 rounded-lg"
+                    >
+                      Modifier
+                    </Link>
+                  )}
+                  {t.transporterId && t.transporterId !== me && (
                     <Link
                       href={`/profil/${t.transporterId}`}
                       className="absolute bottom-3 right-3 text-xs bg-[#176c64] text-white px-2 py-1 rounded-lg"
