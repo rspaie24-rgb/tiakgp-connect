@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { InstallPrompt } from "@/components/InstallPrompt";
-import { LogoutButton } from "@/components/LogoutButton";
+import { AuthNav } from "@/components/AuthNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -58,8 +58,7 @@ export default function RootLayout({
             <Link href="/chercher" className="hover:underline">Je cherche</Link>
             <Link href="/publish" className="hover:underline">Publier</Link>
             <Link href="/dashboard" className="hover:underline">Mon compte</Link>
-            <Link href="/login" className="hover:underline">Connexion</Link>
-            <LogoutButton className="text-white/80" />
+            <AuthNav />
           </nav>
         </header>
 
