@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { LogoutButton } from "@/components/LogoutButton";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -51,13 +52,14 @@ export default function RootLayout({
               Yobbu<span className="text-[#f5c65d]">Go</span>
             </span>
           </Link>
-          <nav className="flex gap-3 sm:gap-4 text-sm flex-wrap justify-end">
+          <nav className="flex gap-3 sm:gap-4 text-sm flex-wrap justify-end items-center">
             <Link href="/local" className="hover:underline">Local</Link>
             <Link href="/gp" className="hover:underline">GP</Link>
             <Link href="/chercher" className="hover:underline">Je cherche</Link>
             <Link href="/publish" className="hover:underline">Publier</Link>
             <Link href="/dashboard" className="hover:underline">Mon compte</Link>
             <Link href="/login" className="hover:underline">Connexion</Link>
+            <LogoutButton className="text-white/80" />
           </nav>
         </header>
 
