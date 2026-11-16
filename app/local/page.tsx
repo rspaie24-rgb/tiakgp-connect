@@ -16,6 +16,7 @@ type LocalAd = {
   zone: string;
   district: string;
   price: string;
+  available: boolean;
   transporterId?: string;
 };
 
@@ -68,7 +69,7 @@ export default function LocalPage() {
         const { data, error: qErr } = await supabase
           .from("local_availabilities")
           .select("id, location, district, price_label, status, transporter_id")
-          .eq("status", "active")
+          .in("status", ["available", "unavailable", "active"])
           .order("created_at", { ascending: false });
 
         if (qErr) setError(qErr.message);
@@ -90,6 +91,7 @@ export default function LocalPage() {
             zone: row.location || "",
             district: row.district || "",
             price: row.price_label || "À convenir",
+            available: row.status !== "unavailable",
             transporterId: row.transporter_id as string,
           }));
           setAll(mapped);
@@ -103,6 +105,7 @@ export default function LocalPage() {
           .select("id, origin, destination, desired_time, details, author_id")
           .eq("kind", "tiak_tiak")
           .eq("status", "active")
+          .lt("contact_count", 5)
           .order("created_at", { ascending: false });
 
         const authorIds = [...new Set((seekData || []).map(s => s.author_id).filter(Boolean))];
@@ -164,11 +167,11 @@ export default function LocalPage() {
           <div className="bg-white border border-[#e1e9e8] rounded-2xl p-6 mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold mb-1">Ville</label>
-              <input value={city} onChange={e => setCity(e.target.value)} placeholder="Dakar, Thiès…" className="w-full border border-[#d3e0dd] rounded-lg p-3" />
+              <input value={city} onChange={e => setCity(e.target.value)} placeholder="Dakar, Pikine…" className="w-full border border-[#d3e0dd] rounded-lg p-3" />
             </div>
             <div>
-              <label className="block text-xs font-bold mb-1">Quartier / zone</label>
-              <input value={district} onChange={e => setDistrict(e.target.value)} placeholder="Plateau, Yoff…" className="w-full border border-[#d3e0dd] rounded-lg p-3" />
+              <label className="block text-xs font-bold mb-1">Zone / alentours</label>
+              <input value={district} onChange={e => setDistrict(e.target.value)} placeholder="Pikine et alentours…" className="w-full border border-[#d3e0dd] rounded-lg p-3" />
             </div>
             <div className="flex items-end">
               <button onClick={search} className="w-full bg-[#efbb45] text-[#243234] font-bold rounded-xl py-3">Rechercher</button>
@@ -195,13 +198,18 @@ export default function LocalPage() {
                     name={t.name}
                     rating="—"
                     reviews={0}
-                    available={true}
+                    available={t.available}
                     price={t.price}
                     icon="🛵"
                     details={
                       <>
                         📍 {t.zone}<br />
-                        🗺️ {t.district}
+                        🗺️ {t.district}<br />
+                        <span className={`inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full ${
+                          t.available ? "bg-[#e3f6e8] text-[#23754a]" : "bg-red-100 text-red-700"
+                        }`}>
+                          {t.available ? "Disponible" : "Non disponible"}
+                        </span>
                       </>
                     }
                   />
