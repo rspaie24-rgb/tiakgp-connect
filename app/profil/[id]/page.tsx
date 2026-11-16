@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { whatsappLink, telLink } from "@/lib/contact";
+import { whatsappLink } from "@/lib/contact";
 
 type Profile = {
+  id: string;
   display_name: string;
-  phone: string | null;
 };
 
 type Review = {
@@ -24,17 +24,18 @@ export default function ProfilPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [avg, setAvg] = useState(0);
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const { data: p } = await supabase
-        .from("profiles")
-        .select("display_name, phone")
-        .eq("id", id)
-        .maybeSingle();
-      setProfile(p as Profile | null);
+      const { data: cards } = await supabase.rpc("public_profile_cards", { p_ids: [id] });
+      setProfile((cards?.[0] as Profile | undefined) || null);
+
+      const { data: contacts } = await supabase.rpc("transporter_whatsapp_contacts", { p_ids: [id] });
+      const number = (contacts?.[0] as { whatsapp_e164?: string } | undefined)?.whatsapp_e164;
+      setWhatsappUrl(number ? whatsappLink(number, "Bonjour, je vous contacte via YobbuGo.") : null);
 
       const { data: revs } = await supabase
         .from("reviews")
@@ -54,9 +55,6 @@ export default function ProfilPage() {
   if (loading) return <p className="text-[#698084]">Chargement…</p>;
   if (!profile) return <p>Profil introuvable.</p>;
 
-  const wa = whatsappLink(profile.phone, `Bonjour ${profile.display_name}, je vous contacte via YobbuGo.`);
-  const tel = telLink(profile.phone);
-
   return (
     <div className="max-w-xl">
       <Link href="/gp" className="text-sm text-[#176c64] underline">
@@ -68,14 +66,9 @@ export default function ProfilPage() {
       </p>
 
       <div className="flex flex-wrap gap-3 mb-6">
-        {tel && (
-          <a href={tel} className="bg-[#176c64] text-white font-semibold rounded-xl px-5 py-2.5">
-            📞 Appeler
-          </a>
-        )}
-        {wa && (
+        {whatsappUrl && (
           <a
-            href={wa}
+            href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-[#25d366] text-white font-semibold rounded-xl px-5 py-2.5"

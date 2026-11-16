@@ -73,14 +73,11 @@ export default function OnboardingPage() {
         return;
       }
 
-      await supabase.from("user_roles").delete().eq("user_id", user.id);
-      const { error } = await supabase.from("user_roles").insert({
-        user_id: user.id,
-        role: selected,
-      });
+      const { error } = await supabase.rpc("set_my_role", { p_role: selected });
 
       if (error) {
-        localStorage.setItem("yobbugo_role", selected);
+        setMessage("Impossible d’enregistrer ce profil. Réessaie plus tard.");
+        return;
       }
 
       if (selected === "tiak_tiak" || selected === "gp") {

@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isNativeApp } from "@/lib/platform";
 
 export function InstallPrompt() {
   const [deferred, setDeferred] = useState<any>(null);
   const [show, setShow] = useState(false);
   const [manual, setManual] = useState(false);
+  const native = isNativeApp();
 
   useEffect(() => {
+    if (native) return;
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferred(e);
@@ -24,7 +27,9 @@ export function InstallPrompt() {
       window.removeEventListener("beforeinstallprompt", handler);
       clearTimeout(t);
     };
-  }, [deferred]);
+  }, [deferred, native]);
+
+  if (native) return null;
 
   if (deferred && show) {
     return (

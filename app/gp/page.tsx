@@ -18,6 +18,8 @@ type Trip = {
   depart: string;
   capacity: string;
   price: string;
+  transporterId: string;
+  whatsappUrl: string | null;
 };
 
 type Seek = {
@@ -28,6 +30,7 @@ type Seek = {
   details: string;
   author: string;
   phone: string | null;
+  authorId: string;
   contact_count: number;
 };
 
@@ -118,13 +121,18 @@ export default function GpPage() {
         } else {
           const ids = [...new Set((data || []).map(r => r.transporter_id).filter(Boolean))];
           const nameById: Record<string, string> = {};
+          const whatsappById: Record<string, string> = {};
           if (ids.length) {
-            const { data: profiles } = await supabase
-              .from("profiles")
-              .select("id, display_name")
-              .in("id", ids);
-            profiles?.forEach(p => {
+            const [{ data: profiles }, { data: contacts }] = await Promise.all([
+              supabase.rpc("public_profile_cards", { p_ids: ids }),
+              supabase.rpc("transporter_whatsapp_contacts", { p_ids: ids }),
+            ]);
+            profiles?.forEach((p: { id: string; display_name: string | null }) => {
               if (p.display_name) nameById[p.id] = p.display_name;
+            });
+            contacts?.forEach((contact: { user_id: string; whatsapp_e164: string }) => {
+              const link = whatsappLink(contact.whatsapp_e164, "Bonjour, je vous contacte via YobbuGo concernant votre trajet GP.");
+              if (link) whatsappById[contact.user_id] = link;
             });
           }
           const mapped: Trip[] = (data || []).map(row => ({
@@ -135,6 +143,8 @@ export default function GpPage() {
             depart: row.departure_at || "",
             capacity: row.capacity_kg != null ? `${row.capacity_kg} kg` : "À préciser",
             price: row.price_label || "À convenir",
+            transporterId: row.transporter_id as string,
+            whatsappUrl: whatsappById[row.transporter_id as string] || null,
           }));
           setAll(mapped);
           setResults(mapped);
@@ -154,16 +164,12 @@ export default function GpPage() {
           console.warn("seek_posts", seekErr.message);
         } else {
           const authorIds = [...new Set((seekData || []).map(s => s.author_id).filter(Boolean))];
-          const profilesById: Record<string, { name: string; phone: string | null }> = {};
+          const profilesById: Record<string, { name: string }> = {};
           if (authorIds.length) {
-            const { data: profiles } = await supabase
-              .from("profiles")
-              .select("id, display_name, phone")
-              .in("id", authorIds);
-            profiles?.forEach(p => {
+            const { data: profiles } = await supabase.rpc("public_profile_cards", { p_ids: authorIds });
+            profiles?.forEach((p: { id: string; display_name: string | null }) => {
               profilesById[p.id] = {
                 name: p.display_name || "Client",
-                phone: p.phone || null,
               };
             });
           }
@@ -175,7 +181,8 @@ export default function GpPage() {
               desired_date: s.desired_date || "",
               details: s.details || "",
               author: profilesById[s.author_id as string]?.name || "Client",
-              phone: profilesById[s.author_id as string]?.phone || null,
+              authorId: s.author_id as string,
+              phone: null,
               contact_count: s.contact_count || 0,
             }))
           );
@@ -327,6 +334,7 @@ export default function GpPage() {
                   available={true}
                   price={t.price}
                   icon="✈️"
+                  whatsappUrl={t.whatsappUrl}
                   details={
                     <>
                       🌍 {t.from} → {t.to}

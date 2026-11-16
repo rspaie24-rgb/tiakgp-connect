@@ -46,8 +46,8 @@ export default function Confidentialite() {
 
       <h2 className="text-lg font-semibold mt-6">Vos droits</h2>
       <p>
-        Vous pouvez demander l’accès, la rectification ou la suppression de vos données
-        en écrivant à :{" "}
+        Vous pouvez accéder à vos données, les rectifier ou demander la suppression de votre compte
+        depuis la page <a href="/compte" className="text-[#176c64] underline">Mon compte</a>, ou en écrivant à :{" "}
         <a href="mailto:rspaie24@gmail.com" className="text-[#176c64] underline">rspaie24@gmail.com</a>
       </p>
 

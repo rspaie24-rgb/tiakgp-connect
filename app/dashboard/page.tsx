@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { ROLE_LABELS, isTransporter, type AppRole } from "@/lib/roles";
+import { TransporterContactSettings } from "@/components/TransporterContactSettings";
 
 type MyAd = {
   id: number;
@@ -105,7 +106,7 @@ export default function DashboardPage() {
         .eq("transporter_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (localErr && !adsError) setAdsError(localErr.message);
+      if (localErr) setAdsError(previous => previous || localErr.message);
       locals?.forEach(row => {
         list.push({
           id: Number(row.id),
@@ -173,6 +174,9 @@ export default function DashboardPage() {
           </>
         )}
       </p>
+      <p className="mb-6 text-sm">
+        <Link href="/compte" className="text-[#176c64] underline">Gérer mes données et mon compte</Link>
+      </p>
 
       {transporter ? (
         <div className="space-y-6">
@@ -188,6 +192,7 @@ export default function DashboardPage() {
               + Publier une annonce
             </Link>
           </div>
+          <TransporterContactSettings />
 
           <div className="bg-white border border-[#e0e9e7] rounded-2xl p-6">
             <h2 className="font-bold mb-4">Mes annonces ({ads.length})</h2>

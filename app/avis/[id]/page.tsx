@@ -63,7 +63,7 @@ export default function AvisPage() {
           />
         </div>
         <button type="submit" className="bg-[#efbb45] text-[#243234] font-bold rounded-xl px-6 py-3">
-          Envoyer l'avis
+          Envoyer l&apos;avis
         </button>
       </form>
       {msg && <p className="mt-4 text-sm">{msg}</p>}

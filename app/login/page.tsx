@@ -144,12 +144,12 @@ export default function LoginPage() {
     <div className="max-w-md mx-auto bg-white border border-[#e1e9e8] rounded-2xl p-8">
       <h1 className="text-2xl font-bold mb-2">Connexion / Inscription</h1>
       <p className="text-sm text-[#698084] mb-6">
-        Avec ton <strong>numéro de téléphone</strong> — pas besoin d'e-mail.
+        Avec ton <strong>numéro de téléphone</strong> — pas besoin d&apos;e-mail.
       </p>
 
       {!configured && (
         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
-          Supabase n'est pas encore configuré sur ce déploiement.
+          Supabase n&apos;est pas encore configuré sur ce déploiement.
         </div>
       )}
 
