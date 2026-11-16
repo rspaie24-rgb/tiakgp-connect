@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { ROLE_LABELS, isTransporter, type AppRole } from "@/lib/roles";
+import { LogoutButton } from "@/components/LogoutButton";
 
 type MyAd = {
   id: number;
@@ -118,7 +119,6 @@ export default function DashboardPage() {
 
       setAds(list);
 
-      // Demandes du chercheur
       const { data: mySeeks } = await supabase
         .from("seek_posts")
         .select("id, kind, origin, destination, status, contact_count")
@@ -162,7 +162,10 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1">Mon compte YobbuGo</h1>
+      <div className="flex justify-between items-start gap-4 mb-1">
+        <h1 className="text-2xl font-bold">Mon compte YobbuGo</h1>
+        <LogoutButton className="text-[#176c64] font-semibold" />
+      </div>
       <p className="text-[#698084] mb-6">
         {name && <span className="font-semibold text-[#132a35]">{name}</span>}
         {role && (
